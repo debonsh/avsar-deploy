@@ -1,0 +1,50 @@
+{
+  "name": "avsar",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "scrape": "node scripts/scrape.mjs",
+    "jobs:import": "node scripts/naukri.mjs",
+    "deck:shots": "node scripts/deck/capture-screens.mjs",
+    "deck:logo": "node scripts/deck/prepare-logo.mjs",
+    "deck:assets": "node scripts/deck/extract-assets.mjs && node scripts/deck/prepare-assets.mjs",
+    "deck:build": "node scripts/deck/prepare-logo.mjs && node scripts/deck/build-deck.mjs",
+    "deck:verify": "node scripts/deck/verify-deck.mjs",
+    "deck:preview": "node scripts/deck/prepare-logo.mjs && node scripts/deck/preview.mjs"
+  },
+  "dependencies": {
+    "@coreui/icons": "^3.1.0",
+    "@coreui/icons-react": "^2.3.0",
+    "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-slot": "^1.3.3",
+    "@supabase/supabase-js": "^2.115.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.41.0",
+    "motion": "^13.2.0",
+    "pdfjs-dist": "^6.3.289",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.1",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "jsdom": "^30.1.0",
+    "jszip": "^3.10.2",
+    "oxlint": "^1.79.0",
+    "playwright": "^1.63.0",
+    "pptxgenjs": "^4.0.1",
+    "vite": "^8.2.2"
+  }
+}

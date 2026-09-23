@@ -1,0 +1,15 @@
+{
+  "name": "Avsar — BAMS internships and upskilling",
+  "short_name": "Avsar",
+  "description": "Score BAMS resumes, clear the SHISHIKSHA checklist, and track ayurveda internships with proof.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f3ea",
+  "theme_color": "#f6f3ea",
+  "lang": "en",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
