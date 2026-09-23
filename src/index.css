@@ -1,0 +1,340 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans Devanagari", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque", "Noto Sans Devanagari", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --color-ink: #06060b;
+  --color-panel: #0c0c12;
+  --color-blurple: #5865f2;
+  --color-blurple-deep: #4752c4;
+  --color-blurple-soft: #9aa4ff;
+  --color-sage: #bfbfad;
+
+  --radius-lg: 0;
+  --radius-xl: 0;
+}
+
+/* Type split: Bricolage display headlines, Inter body, DM Mono system24 chrome.
+   Square panels, 1px borders (2px on hero), zinc body floor. */
+body {
+  background: #06060b;
+  color: #d4d4d8;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  letter-spacing: -0.02em;
+}
+
+/* TUI block cursor, system24 ascii-loader energy */
+.cursor-blink {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: #5865f2;
+  animation: cursor-blink 1.06s steps(1) infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+/* [ayush] notice ticker: slow drift, frozen under reduced-motion by the global rule */
+.ticker {
+  animation: ticker-drift 40s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ticker-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+::selection {
+  background: #5865f2;
+  color: #fff;
+}
+
+/* visible keyboard focus everywhere */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid #5865f2;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Geometric dither: two dot grids at different scales, offset by half a cell.
+   Crisp vector geometry, masked to fade. Used on the landing hero only. */
+.bg-dither {
+  background-image: radial-gradient(circle, rgb(255 255 255 / 0.13) 1px, transparent 1.5px);
+  background-size: 9px 9px;
+}
+
+.bg-dither-blurple {
+  background-image: radial-gradient(circle, rgb(88 101 242 / 0.22) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+}
+
+.mask-hero-fade {
+  -webkit-mask-image: radial-gradient(ellipse 85% 70% at 50% 36%, black 20%, transparent 76%);
+  mask-image: radial-gradient(ellipse 85% 70% at 50% 36%, black 20%, transparent 76%);
+}
+
+/* Harbor hatch: thin horizontal scanlines over the fractal map,
+   shipping-illustration energy, system24 1px discipline. */
+.hatch-lines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.05) 0px,
+    rgb(255 255 255 / 0.05) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+/* [ayush] professional ayurveda theme: warm paper, herb-green primary.
+   Applied at the shell root so the whole portal renders light —
+   zinc scale remaps below, blurple tokens re-point to green via vars. */
+.ayush-light {
+  --color-ink: #f6f3ea;
+  --color-panel: #ffffff;
+  --color-blurple: #1e7a4c;
+  --color-blurple-deep: #155c39;
+  --color-blurple-soft: #166038;
+  --color-sage: #6b7a3a;
+  background: #f6f3ea;
+  color: #1c1917;
+}
+.ayush-light .bg-ink { background-color: #f6f3ea; }
+.ayush-light .bg-blurple { background-color: #1e7a4c; }
+.ayush-light .hover\:bg-blurple-deep:hover { background-color: #155c39; }
+.ayush-light .border-blurple\/40 { border-color: rgb(30 122 76 / 0.4); }
+.ayush-light .bg-blurple\/10 { background-color: rgb(30 122 76 / 0.08); }
+.ayush-light .bg-blurple\/30 { border-color: rgb(30 122 76 / 0.3); }
+.ayush-light .bg-zinc-950 { background-color: #ffffff; }
+.ayush-light .bg-panel\/95, .ayush-light .bg-panel { background-color: rgb(255 255 255 / 0.97); }
+.ayush-light .bg-zinc-900 { background-color: #efe9d8; }
+.ayush-light .bg-zinc-800 { background-color: #e7e0cd; }
+.ayush-light .border-zinc-800 { border-color: #e4e4e7; }
+.ayush-light .border-zinc-700 { border-color: #d4d4d8; }
+.ayush-light .border-zinc-600 { border-color: #a1a1aa; }
+.ayush-light .divide-zinc-800 > * + * { border-color: #e4e4e7; }
+.ayush-light .text-zinc-50, .ayush-light .text-zinc-100 { color: #18181b; }
+.ayush-light .text-zinc-200 { color: #27272a; }
+.ayush-light .text-zinc-300 { color: #3f3f46; }
+.ayush-light .text-zinc-400 { color: #52525b; }
+.ayush-light .text-zinc-500 { color: #636366; }
+.ayush-light .text-zinc-600 { color: #71717a; }
+.ayush-light [class*="text-blurple-soft"] { color: #4752c4; }
+.ayush-light [class*="text-emerald-300"], .ayush-light [class*="text-emerald-400"] { color: #047857; }
+.ayush-light [class*="border-emerald-900"] { border-color: #a7f3d0; }
+.ayush-light [class*="text-amber-300"] { color: #b45309; }
+.ayush-light [class*="text-sage"] { color: #5f5f43; }
+.ayush-light [class*="border-sage"] { border-color: #c9c9ae; }
+.ayush-light [class*="bg-sage"] { background-color: #f0f0e2; }
+.ayush-light [class*="text-red-400"] { color: #b91c1c; }
+.ayush-light [class*="text-green-300"] { color: #15803d; }
+/* status chips + error states: dark translucent fills become light tints */
+.ayush-light .bg-green-950 { background-color: #f0fdf4; }
+.ayush-light .border-green-900 { border-color: #bbf7d0; }
+.ayush-light .bg-amber-950 { background-color: #fffbeb; }
+.ayush-light .border-amber-900 { border-color: #fde68a; }
+.ayush-light .bg-blue-950 { background-color: #eff6ff; }
+.ayush-light .border-blue-900 { border-color: #bfdbfe; }
+.ayush-light [class*="text-blue-300"] { color: #1d4ed8; }
+.ayush-light .bg-red-950 { background-color: #fef2f2; }
+.ayush-light .border-red-900 { border-color: #fecaca; }
+.ayush-light [class*="text-red-300"] { color: #b91c1c; }
+.ayush-light [class*="text-red-200"] { color: #b91c1c; }
+.ayush-light .hover\:bg-red-950:hover { background-color: #fef2f2; }
+.ayush-light .hover\:bg-zinc-900:hover { background-color: #f1ecdd; }
+.ayush-light .hover\:text-zinc-100:hover, .ayush-light .hover\:text-zinc-200:hover { color: #18181b; }
+.ayush-light .hover\:border-zinc-600:hover { border-color: #a1a1aa; }
+.ayush-light .hover\:border-zinc-500:hover { border-color: #71717a; }
+
+/* warm focus + selection to match the herb-green primary */
+.ayush-light ::selection { background: #1e7a4c; color: #fff; }
+.ayush-light :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid #1e7a4c;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: #27272a; border-radius: 8px; }
+
+/* [app] dark theme: the zinc/blurple base is already dark, so this layer only
+   remaps the light-hardcoded utilities (stone scale, white surfaces, emerald
+   tints) that the newer screens use. Warm-dark panels keep the paper feel. */
+.ayush-dark { --color-ink: #0d100e; --color-panel: #141a15; background: #0d100e; color: #ece7d9; }
+.ayush-dark .bg-white { background-color: #141a15; }
+/* opacity variants stay light by default — remap so panels/lists keep dark text readable */
+.ayush-dark .bg-white\/95 { background-color: rgb(20 26 21 / 0.95); }
+.ayush-dark .bg-white\/90 { background-color: rgb(20 26 21 / 0.9); }
+.ayush-dark .bg-white\/60 { background-color: rgb(20 26 21 / 0.6); }
+.ayush-dark .text-emerald-950 { color: #a7f3d0; }
+.ayush-dark .bg-stone-50 { background-color: #1a201b; }
+.ayush-dark .bg-stone-100 { background-color: #20271f; }
+.ayush-dark .bg-stone-200 { background-color: #2c332d; }
+.ayush-dark .border-stone-100 { border-color: #242b25; }
+.ayush-dark .border-stone-200 { border-color: #2c332d; }
+.ayush-dark .divide-stone-100 > * + * { border-color: #242b25; }
+.ayush-dark .text-stone-400 { color: #8a8474; }
+.ayush-dark .text-stone-500, .ayush-dark .text-stone-600 { color: #b3ac9c; }
+.ayush-dark .text-stone-700, .ayush-dark .text-stone-800, .ayush-dark .text-stone-900 { color: #ece7d9; }
+.ayush-dark .bg-emerald-50 { background-color: rgb(30 122 76 / 0.16); }
+.ayush-dark .bg-emerald-100 { background-color: rgb(30 122 76 / 0.28); }
+.ayush-dark .border-emerald-200 { border-color: rgb(52 211 153 / 0.35); }
+.ayush-dark .text-emerald-700 { color: #34d399; }
+.ayush-dark .text-emerald-800, .ayush-dark .text-emerald-900 { color: #6ee7b7; }
+.ayush-dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.12); }
+.ayush-dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.22); }
+.ayush-dark .border-amber-300, .ayush-dark .border-amber-400 { border-color: rgb(245 158 11 / 0.4); }
+.ayush-dark .text-amber-800 { color: #fcd34d; }
+.ayush-dark .bg-sky-50 { background-color: rgb(14 165 233 / 0.12); }
+.ayush-dark .bg-sky-50\/50 { background-color: #09090b; }
+.ayush-dark .bg-sky-100 { background-color: #1a201b; }
+.ayush-dark .border-sky-200 { border-color: #27272a; }
+.ayush-dark .bg-emerald-50\/70 { background-color: rgb(30 122 76 / 0.14); }
+.ayush-dark .text-sky-700, .ayush-dark .text-sky-800 { color: #7dd3fc; }
+.ayush-dark .border-sky-200 { border-color: rgb(125 211 252 / 0.3); }
+.ayush-dark .bg-rose-100 { background-color: rgb(244 63 94 / 0.16); }
+.ayush-dark .text-rose-800 { color: #fda4af; }
+.ayush-dark .text-red-500 { color: #f87171; }
+.ayush-dark .bg-blurple { background-color: #1e7a4c; }
+.ayush-dark .hover\:bg-blurple-deep:hover { background-color: #155c39; }
+.ayush-dark [class*="text-blurple-soft"] { color: #34d399; }
+.ayush-dark .border-blurple { border-color: #1e7a4c; }
+.ayush-dark .bg-blurple\/10 { background-color: rgb(30 122 76 / 0.14); }
+.ayush-dark .bg-blurple\/15 { background-color: rgb(30 122 76 / 0.18); }
+.ayush-dark .border-blurple\/40 { border-color: rgb(30 122 76 / 0.45); }
+.ayush-dark .border-blurple\/30 { border-color: rgb(30 122 76 / 0.35); }
+.ayush-dark .bg-stone-50\/60 { background-color: rgb(26 32 27 / 0.6); }
+.ayush-dark .stroke-stone-200 { stroke: #2c332d; }
+.ayush-dark .app-header { background-color: rgb(13 16 14 / 0.92); }
+.ayush-dark .app-tabbar { background-color: rgb(13 16 14 / 0.95); }
+.ayush-dark ::selection { background: #1e7a4c; color: #fff; }
+.ayush-dark :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* [tech] engineering console theme: cool paper, blurple primary.
+   Applied at the shell root so the whole portal renders light —
+   same remap job as .ayush-light, different universe. The zinc/blurple
+   base is already dark, so .tech-dark only sets the floor. */
+.tech-light {
+  --color-ink: #f3f5fa;
+  --color-panel: #ffffff;
+  --color-blurple: #5865f2;
+  --color-blurple-deep: #4752c4;
+  --color-blurple-soft: #4752c4;
+  background: #f3f5fa;
+  color: #18181b;
+}
+.tech-light .bg-ink { background-color: #f3f5fa; }
+.tech-light .bg-zinc-950 { background-color: #ffffff; }
+.tech-light .bg-panel\/95, .tech-light .bg-panel { background-color: rgb(255 255 255 / 0.97); }
+.tech-light .bg-zinc-900 { background-color: #e9ecf3; }
+.tech-light .bg-zinc-800 { background-color: #dee3ee; }
+.tech-light .border-zinc-800 { border-color: #e4e4e7; }
+.tech-light .border-zinc-700 { border-color: #d4d4d8; }
+.tech-light .divide-zinc-800 > * + * { border-color: #e4e4e7; }
+.tech-light .text-zinc-50, .tech-light .text-zinc-100 { color: #18181b; }
+.tech-light .text-zinc-200 { color: #27272a; }
+.tech-light .text-zinc-300 { color: #3f3f46; }
+.tech-light .text-zinc-400 { color: #52525b; }
+.tech-light .text-zinc-500 { color: #636366; }
+.tech-light .text-zinc-600 { color: #71717a; }
+.tech-light [class*="text-blurple-soft"] { color: #4752c4; }
+.tech-light [class*="text-green-300"] { color: #15803d; }
+.tech-light .bg-green-950 { background-color: #f0fdf4; }
+.tech-light .border-green-900 { border-color: #bbf7d0; }
+.tech-light .bg-amber-950 { background-color: #fffbeb; }
+.tech-light .border-amber-900 { border-color: #fde68a; }
+.tech-light [class*="text-amber-300"] { color: #b45309; }
+.tech-light .bg-blue-950 { background-color: #eff6ff; }
+.tech-light .border-blue-900 { border-color: #bfdbfe; }
+.tech-light [class*="text-blue-300"] { color: #1d4ed8; }
+.tech-light .bg-red-950 { background-color: #fef2f2; }
+.tech-light .border-red-900 { border-color: #fecaca; }
+.tech-light [class*="text-red-300"] { color: #b91c1c; }
+.tech-light [class*="text-red-400"] { color: #b91c1c; }
+.tech-light .hover\:bg-red-950:hover { background-color: #fef2f2; }
+.tech-light .hover\:bg-zinc-900:hover { background-color: #e9ecf3; }
+.tech-light .hover\:text-zinc-100:hover { color: #18181b; }
+.tech-light .hover\:border-zinc-600:hover { border-color: #a1a1aa; }
+.tech-light .hover\:border-zinc-500:hover { border-color: #71717a; }
+.tech-light ::selection { background: #5865f2; color: #fff; }
+.tech-light :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid #5865f2;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.tech-dark { --color-ink: #06060b; --color-panel: #0c0c12; background: #06060b; color: #d4d4d8; }
+.tech-dark .app-header { background-color: rgb(6 6 11 / 0.85); }
+.tech-dark .app-tabbar { background-color: rgb(6 6 11 / 0.95); }
+/* light-hardcoded utilities (stone scale, white surfaces) that the shared
+   journey/profile/programs screens use — remapped so tech-dark stays legible. */
+.tech-dark .bg-white { background-color: #0c0c12; }
+.tech-dark .bg-white\/95 { background-color: rgb(12 12 18 / 0.95); }
+.tech-dark .bg-white\/90 { background-color: rgb(12 12 18 / 0.9); }
+.tech-dark .bg-white\/60 { background-color: rgb(12 12 18 / 0.6); }
+.tech-dark .bg-stone-50 { background-color: #101014; }
+.tech-dark .bg-stone-100 { background-color: #17171c; }
+.tech-dark .bg-stone-200 { background-color: #27272a; }
+.tech-dark .border-stone-100 { border-color: #27272a; }
+.tech-dark .border-stone-200 { border-color: #3f3f46; }
+.tech-dark .divide-stone-100 > * + * { border-color: #27272a; }
+.tech-dark .text-stone-400 { color: #a1a1aa; }
+.tech-dark .text-stone-500, .tech-dark .text-stone-600 { color: #d4d4d8; }
+.tech-dark .text-stone-700, .tech-dark .text-stone-800, .tech-dark .text-stone-900 { color: #f4f4f5; }
+.tech-dark .bg-emerald-50 { background-color: rgb(88 101 242 / 0.14); }
+.tech-dark .border-emerald-200 { border-color: rgb(88 101 242 / 0.35); }
+.tech-dark .text-emerald-700, .tech-dark .text-emerald-800 { color: #9aa4ff; }
+.tech-dark .text-emerald-900 { color: #c7d2fe; }
+.tech-dark .hover\:bg-emerald-50:hover { background-color: rgb(88 101 242 / 0.14); }
+.tech-dark .hover\:text-emerald-800:hover { color: #c7d2fe; }
+.tech-dark .hover\:border-emerald-400:hover { border-color: #5865f2; }
+.tech-dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.12); }
+.tech-dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.22); }
+.tech-dark .text-amber-800 { color: #fcd34d; }
+
+/* [app] streak heatmap: GitHub buckets in herb green, both themes. */
+.heat-0 { background-color: #e7e0cd; }
+.heat-1 { background-color: #bfe3cf; }
+.heat-2 { background-color: #7cc9a2; }
+.heat-3 { background-color: #2f9e68; }
+.heat-4 { background-color: #1e7a4c; }
+.ayush-dark .heat-0 { background-color: #20271f; }
+.ayush-dark .heat-1 { background-color: #14432e; }
+.ayush-dark .heat-2 { background-color: #1e7a4c; }
+.ayush-dark .heat-3 { background-color: #34d399; }
+.ayush-dark .heat-4 { background-color: #a7f3d0; }
+
+/* [app] mobile hardening: kill iOS focus-zoom (16px floor), kill sideways
+   scroll, kill the grey tap flash. Desktop untouched. */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: clip; -webkit-tap-highlight-color: transparent; }
+@media (max-width: 640px) {
+  input, textarea, select { font-size: 16px !important; }
+}

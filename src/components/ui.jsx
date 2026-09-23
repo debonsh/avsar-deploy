@@ -246,7 +246,6 @@ export function Reveal({ children, delay = 0, className, ...rest }) {
     </motion.div>
   );
 }
-
 // Animated integer for scores and stats. Static text when reduced motion.
 export function CountUp({ to, className }) {
   const reduce = useReducedMotion();
