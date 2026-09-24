@@ -4,21 +4,23 @@
 // Nav DNA: CoreUI navbar (brand left, nav cluster center, stat+avatar right) on
 // desktop; Duolingo-style icon bottom tabs on mobile. One segmented control,
 // one sliding pill, no hamburger.
-import { useEffect, useRef, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useLocation } from "react-router";
+import { useEffect, useState } from "react";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import CIcon from "@coreui/icons-react";
 import {
-  cilSpa, cilHome, cilCompass, cilBriefcase, cilBook, cilUser, cilDescription,
-  cilChevronBottom, cilSun, cilMoon,
+  cilSpa, cilUser, cilSun, cilMoon, cilHamburgerMenu,
 } from "@coreui/icons";
 import { motion, useReducedMotion } from "motion/react";
 import { useAvsar } from "./store.jsx";
 import { calculateMainScore } from "../lib/score.js";
-import { loadTheme, saveTheme } from "../lib/theme.js";
+import { loadTheme, saveTheme, surfaceFor, floorFor } from "../lib/theme.js";
 import { loadLang, saveLang, t } from "../lib/i18n.js";
 import { canAccess, dashboardFor, isPublicPath, STUDENT_ROLES } from "../lib/rbac.js";
 import { roleLabel } from "../lib/roles.js";
-import { signInWithGoogle } from "../lib/auth.js";
+import { isSupabaseOn } from "../lib/supabase.js";
+import { authGate } from "../lib/authgate.js";
+import { primaryFor, secondaryGroupsFor, sheetGroupsFor, isSecondaryPath, labelKeyFor } from "../lib/nav.js";
+import { DesktopMoreMenu, MobileMenuSheet, NAV_ICONS } from "./nav-menu.jsx";
 import Jobs from "../pages/Jobs.jsx";
 import Quests from "../pages/Quests.jsx";
 import Quiz from "../pages/Quiz.jsx";
@@ -30,6 +32,7 @@ import Profile from "../pages/Profile.jsx";
 import Journey from "../pages/Journey.jsx";
 import Home from "../pages/Home.jsx";
 import NotFound from "../pages/NotFound.jsx";
+import Login from "../pages/Login.jsx";
 import Industry from "../pages/Industry.jsx";
 import Verify from "../pages/Verify.jsx";
 import Ayush from "../pages/Ayush.jsx";
@@ -42,44 +45,9 @@ import Welcome from "../pages/Welcome.jsx";
 import { CoachWidget } from "./coach-widget.jsx";
 import { RouteErrorBoundary } from "./error-boundary.jsx";
 
-// Each portal keeps its own engine nav. A student on the tech portal never sees
-// ayurveda's checklist link, and the reverse holds too.
-const ENGINE = {
-  ayush: {
-    segments: [
-      { to: "/home", key: "nav.home", icon: cilHome },
-      { to: "/journey", key: "nav.journey", icon: cilCompass },
-      { to: "/jobs", key: "nav.internships", icon: cilBriefcase },
-      { to: "/quests", key: "nav.quests", icon: cilBook },
-    ],
-    more: [
-      { to: "/resume", key: "more.resume" },
-      { to: "/quiz", key: "more.quiz" },
-      { to: "/interview", key: "more.interview" },
-      { to: "/portfolio", key: "more.portfolio" },
-      { to: "/ayush", key: "more.ayush" },
-      { to: "/match", key: "more.match" },
-      { to: "/programs", key: "more.programs" },
-      { to: "/workspace", key: "more.workspace" },
-    ],
-  },
-  tech: {
-    segments: [
-      { to: "/home", key: "nav.home", icon: cilHome },
-      { to: "/resume", key: "nav.resume", icon: cilDescription },
-      { to: "/jobs", key: "nav.jobs", icon: cilBriefcase },
-      { to: "/quests", key: "nav.quests", icon: cilBook },
-    ],
-    more: [
-      { to: "/quiz", key: "more.quiz" },
-      { to: "/interview", key: "more.interview" },
-      { to: "/portfolio", key: "more.portfolio" },
-      { to: "/match", key: "more.match" },
-      { to: "/programs", key: "more.programs" },
-      { to: "/workspace", key: "more.workspace" },
-    ],
-  },
-};
+// Primary destinations per portal. The full IA (primaries, overflow groups,
+// sheet map) lives in lib/nav.js — this shell only resolves icons + labels.
+const DESK_ICON = { industry: "briefcase", faculty: "book", institute: "home" };
 
 // professional roles get one desk of their own instead of the student engine.
 const DESK = { industry: "/industry", faculty: "/faculty", institute: "/institute" };
@@ -129,7 +97,10 @@ function ReadinessRing({ value, lang, isTech, light }) {
   );
 }
 
-function Brand({ isTech, light }) {
+// Wordmark ink for the floor it sits on: white on a dark floor, dark ink on a
+// light one. Ayush keeps its own emerald ink on both (the dark theme lifts it
+// to mint in CSS), so only tech and the pre-portal landing flip.
+function Brand({ isTech, onDark }) {
   return (
     <NavLink to="/" className="mr-1 inline-flex shrink-0 items-center gap-2" aria-label="Avsar home">
       {isTech ? (
@@ -139,7 +110,7 @@ function Brand({ isTech, light }) {
           <CIcon icon={cilSpa} width={18} height={18} />
         </span>
       )}
-      <span className={`text-base font-bold tracking-tight ${isTech ? (light ? "text-zinc-900" : "text-zinc-50") : light ? "text-zinc-50" : "text-emerald-950"}`}>Avsar</span>
+      <span className={`text-base font-bold tracking-tight ${isTech ? (onDark ? "text-zinc-50" : "text-zinc-900") : onDark ? "text-zinc-50" : "text-emerald-950"}`}>Avsar</span>
       <span className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold ${isTech ? "bg-blurple/15 text-blurple-soft" : "bg-amber-100 text-amber-800"}`}>
         SIH&rsquo;26
       </span>
@@ -155,21 +126,26 @@ function RequireRole({ path, children }) {
 }
 
 export function Shell() {
-  const moreRef = useRef(null);
   const { pathname } = useLocation();
-  const { track, role, lane, resume, funnel, user, signOutUser } = useAvsar();
+  const nav = useNavigate();
+  const { track, role, lane, resume, funnel, user, authReady, signOutUser } = useAvsar();
   const reduce = useReducedMotion();
   const [theme, setTheme] = useState(() => loadTheme());
   const [lang, setLang] = useState(() => loadLang());
-  const [authMsg, setAuthMsg] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const isTech = track === "tech";
   const isAyush = track === "ayush";
+  const onboarded = Boolean(track);
   // Tech is English-only: the Ayush portal is bilingual (EN/HI), the Tech
   // universe never shows Hindi. effLang is the one language the chrome reads.
   const effLang = isTech ? "en" : lang;
   const dark = theme === "dark";
-  const techLight = isTech && !dark;
-  const onboarded = Boolean(track);
+  // No portal picked yet → the landing borrows the tech floor. It has no
+  // universe of its own, but it must still be themed: unscoped it fell through
+  // to the dark body and the toggle did nothing until a portal was picked.
+  const techFloor = isTech || !onboarded;
+  const techLight = techFloor && !dark;
+  const surface = surfaceFor(track, theme);
   // readiness belongs to the resume that was scored, not to whoever is looking.
   const readiness = resume?.result
     ? calculateMainScore(resume.result.total, 0, 0, resume.roleKey || lane)
@@ -182,51 +158,39 @@ export function Shell() {
   };
 
   const isStudentFamily = STUDENT_ROLES.includes(role);
-  const engine = ENGINE[track] || ENGINE.ayush;
-  const segments = isStudentFamily
-    ? engine.segments
-    : [{ to: DESK[role], key: null, label: roleLabel(role), icon: cilBriefcase }];
-  const segs = segments.map((s) => ({ ...s, label: (s.key && t(effLang, s.key)) || s.label }));
-  const tabs = [...segs, { to: "/profile", key: "nav.profile", label: t(effLang, "nav.profile"), icon: cilUser }];
-  const moreLinks = isStudentFamily ? engine.more.map((l) => ({ ...l, label: t(effLang, l.key) || l.label })) : [];
+  // One IA, three surfaces: header pills, the desktop Menu panel, and the
+  // mobile Menu sheet all read lib/nav.js, so a section can never exist on
+  // desktop but go missing on mobile again.
+  const segs = isStudentFamily
+    ? primaryFor(track).map((s) => ({ ...s, label: t(effLang, labelKeyFor(s, track)), icon: NAV_ICONS[s.icon] }))
+    : [{ to: DESK[role], label: roleLabel(role), icon: NAV_ICONS[DESK_ICON[role] || "briefcase"] }];
+  const profileTab = { to: "/profile", label: t(effLang, "nav.profile"), icon: NAV_ICONS.user };
+  const menuGroups = isStudentFamily ? secondaryGroupsFor(track) : [];
+  const sheetGroups = isStudentFamily ? sheetGroupsFor(track) : [];
+  const menuActive = isStudentFamily && isSecondaryPath(track, pathname);
+  const roleText = roleLabel(role);
+  // the menu's sign-in entry opens the full /login surface (email + Google).
+  const handleSignIn = () => nav("/login");
+  // one decision for the whole app: allow, bounce to /login, or hold a splash
+  // while the cached session is being read (lib/authgate.js is the pure core).
+  const gate = authGate({ supabaseOn: isSupabaseOn(), authReady, user, path: pathname });
 
   useEffect(() => {
     saveTheme(theme);
-    // No portal picked yet → the landing owns a dark floor, always. Each
-    // universe owns its floor after onboarding: ayush paper vs tech console,
-    // each with a real light and dark. Tech is never pinned to always-dark.
-    const bg = !track
-      ? "#06060b"
-      : isAyush
-        ? theme === "dark" ? "#0d100e" : "#f6f3ea"
-        : theme === "dark" ? "#06060b" : "#f3f5fa";
+    // The body floor is the one the shell root's scope paints — the same
+    // number, so no dark band shows under a light theme. Landing included.
+    const bg = floorFor(track, theme);
     document.body.style.background = bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
-  }, [theme, isAyush, track]);
+  }, [theme, track]);
 
-  // The More menu is uncontrolled; close it imperatively on navigation,
-  // outside click, and Escape so it never lingers.
-  useEffect(() => {
-    if (moreRef.current) moreRef.current.open = false;
-  }, [pathname]);
-
-  useEffect(() => {
-    const close = () => {
-      if (moreRef.current?.open) moreRef.current.open = false;
-    };
-    const onDown = (e) => {
-      if (moreRef.current?.open && !moreRef.current.contains(e.target)) close();
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape") close();
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, []);
+  // The Menu sheet is modal; a route change re-renders us anyway, so shut
+  // it as a render-time adjustment instead of an effect.
+  const [menuShutFor, setMenuShutFor] = useState(pathname);
+  if (pathname !== menuShutFor) {
+    setMenuShutFor(pathname);
+    if (menuOpen) setMenuOpen(false);
+  }
 
   // Static active pill: layoutId springs measure layout on every nav
   // change, which janks on weak GPUs. A plain fill reads the same.
@@ -234,25 +198,23 @@ export function Shell() {
     active ? <span className={`absolute inset-0 rounded-full ${isTech ? "bg-blurple" : "bg-emerald-700"}`} /> : null;
 
   const guard = (path, element) => <RequireRole path={path}>{element}</RequireRole>;
-  const headerCls = !onboarded
-    ? "app-header sticky top-0 z-30 border-b border-zinc-800/80 bg-ink/85 backdrop-blur"
-    : isTech
-      ? techLight
-        ? "app-header sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur"
-        : "app-header sticky top-0 z-30 border-b border-zinc-800/80 bg-ink/85 backdrop-blur"
-      : "app-header sticky top-0 z-30 border-b border-emerald-900/10 bg-[#f6f3ea]/90";
+  const headerCls = isAyush
+    ? "app-header sticky top-0 z-30 border-b border-emerald-900/10 bg-[#f6f3ea]/90"
+    : techLight
+      ? "app-header sticky top-0 z-30 border-b border-zinc-200 bg-white/90 backdrop-blur"
+      : "app-header sticky top-0 z-30 border-b border-zinc-800/80 bg-ink/85 backdrop-blur";
   const navShellCls = isTech
     ? techLight ? "border-zinc-200 bg-zinc-100" : "border-zinc-800 bg-zinc-950"
     : "border-emerald-900/10 bg-white";
-  const iconBtnCls = !onboarded || (isTech && !techLight)
-    ? "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-blurple/60 hover:text-zinc-100"
-    : isTech
+  const iconBtnCls = !techFloor
+    ? "border-stone-200 bg-white text-stone-500 hover:border-emerald-400 hover:text-emerald-800"
+    : techLight
       ? "border-zinc-300 bg-white text-zinc-500 hover:border-blurple hover:text-zinc-900"
-      : "border-stone-200 bg-white text-stone-500 hover:border-emerald-400 hover:text-emerald-800";
+      : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-blurple/60 hover:text-zinc-100";
 
   return (
     <div
-      className={`${isAyush ? (theme === "dark" ? "ayush-dark" : "ayush-light") : isTech ? (theme === "dark" ? "tech-dark" : "tech-light") : ""} flex min-h-dvh flex-col ${dark ? "bg-ink text-zinc-300" : ""}`}
+      className={`${surface} flex min-h-dvh flex-col ${dark ? "bg-ink text-zinc-300" : ""}`}
       data-track={track || "none"}
     >
       <a
@@ -264,7 +226,7 @@ export function Shell() {
       <header className={headerCls}>
         {!isTech && <div className="h-0.5 bg-gradient-to-r from-emerald-800 via-emerald-500 to-amber-400" aria-hidden />}
         <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-2 sm:px-6">
-          <Brand isTech={isTech} light={techLight || !onboarded} />
+          <Brand isTech={isTech} onDark={!isAyush && dark} />
           {onboarded && (
             <nav aria-label="Primary" className={`mx-auto hidden items-center gap-0.5 rounded-full border p-1 shadow-sm sm:flex ${navShellCls}`}>
               {segs.map((s) => (
@@ -318,60 +280,19 @@ export function Shell() {
             >
               <CIcon icon={theme === "dark" ? cilSun : cilMoon} width={17} height={17} />
             </button>
-            {onboarded && (
-              <details ref={moreRef} className="relative hidden sm:block">
-                <summary className={`inline-flex min-h-[40px] cursor-pointer list-none items-center gap-1 rounded-full px-3 py-2 text-sm font-medium ${
-                  isTech ? (techLight ? "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100") : "text-stone-500 hover:bg-emerald-50 hover:text-emerald-900"
-                }`}>
-                  {t(effLang, "nav.more")} <CIcon icon={cilChevronBottom} width={13} height={13} aria-hidden />
-                </summary>
-                <div className={`absolute right-0 top-full z-30 mt-1 w-56 rounded-xl border p-1 shadow-lg ${
-                  isTech ? (techLight ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-950") : "border-stone-200 bg-white"
-                }`}>
-                  <div className={`border-b px-3 py-2.5 ${isTech ? (techLight ? "border-zinc-100" : "border-zinc-800") : "border-stone-100"}`}>
-                    <p className={`mb-2 font-mono text-[10px] uppercase tracking-widest ${isTech ? "text-zinc-500" : "text-stone-400"}`}>
-                      {roleLabel(role)}
-                    </p>
-                    {user ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`truncate text-xs font-medium ${isTech ? "text-zinc-400" : "text-stone-600"}`}>{user.email}</p>
-                        <button
-                          type="button"
-                          onClick={signOutUser}
-                          className={`shrink-0 text-xs font-semibold underline underline-offset-4 ${isTech ? "text-blurple-soft" : "text-emerald-700"}`}
-                        >
-                          Sign out
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          // one click from anywhere: Supabase handles the consent
-                          // screen, onAuthChange adopts the cloud row on return.
-                          const { error } = await signInWithGoogle();
-                          setAuthMsg(error || "redirecting to google…");
-                        }}
-                        className={`text-xs font-semibold underline underline-offset-4 ${isTech ? (techLight ? "text-blurple" : "text-blurple-soft") : "text-emerald-700"}`}
-                      >
-                        Continue with Google
-                      </button>
-                    )}
-                    {authMsg && (
-                      <p className={`mt-1.5 font-mono text-[10px] leading-4 ${isTech ? "text-zinc-500" : "text-stone-500"}`}>{authMsg}</p>
-                    )}
-                  </div>
-                  {moreLinks.map((l) => (
-                    <NavLink
-                      key={l.to}
-                      to={l.to}
-                      className={`block rounded-lg px-3 py-2 text-sm ${isTech ? (techLight ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-300 hover:bg-zinc-900") : "text-stone-600 hover:bg-emerald-50"}`}
-                    >
-                      {l.label}
-                    </NavLink>
-                  ))}
-                </div>
-              </details>
+            {onboarded && isStudentFamily && (
+              <DesktopMoreMenu
+                lang={effLang}
+                track={track}
+                isTech={isTech}
+                techLight={techLight}
+                groups={menuGroups}
+                menuActive={menuActive}
+                user={user}
+                roleText={roleText}
+                onSignOut={signOutUser}
+                onSignIn={handleSignIn}
+              />
             )}
             {onboarded && isStudentFamily && <ReadinessRing value={readiness} lang={effLang} isTech={isTech} light={techLight} />}
             {onboarded && (
@@ -410,11 +331,18 @@ export function Shell() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
           >
-          {!onboarded && !isPublicPath(pathname) ? (
+          {gate === "wait" ? (
+            <div className="flex min-h-[40vh] items-center justify-center" role="status">
+              <span className="font-mono text-xs uppercase tracking-widest text-zinc-500">restoring session…</span>
+            </div>
+          ) : gate === "login" ? (
+            <Navigate to="/login" replace />
+          ) : !onboarded && !isPublicPath(pathname) ? (
             <Navigate to="/" replace />
           ) : (
           <Routes>
           <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/resume" element={guard("/resume", <Resume />)} />
           <Route path="/jobs" element={guard("/jobs", <Jobs />)} />
           <Route path="/quests" element={guard("/quests", <Quests />)} />
@@ -455,6 +383,38 @@ export function Shell() {
                 : t(effLang, "footer.tag")}
             </p>
           </div>
+          {/* the loop, always visible: score, quest, prove, apply, showcase.
+              The strip judges asked for: where to go, in order, from anywhere. */}
+          {isStudentFamily && (
+            <div className="mt-4">
+              <p className={`font-mono text-[10px] uppercase tracking-widest ${isTech ? "text-zinc-500" : "text-stone-400"}`}>
+                {t(effLang, "firstrun.title")}
+              </p>
+              <nav aria-label={t(effLang, "firstrun.title")} className="mt-2 flex flex-wrap items-center gap-1.5">
+                {[
+                  { to: "/resume", label: t(effLang, "loop.resume") },
+                  { to: "/quests", label: t(effLang, "loop.quests") },
+                  { to: "/interview", label: t(effLang, "loop.interview") },
+                  { to: "/jobs", label: isTech ? t(effLang, "nav.jobs") : t(effLang, "nav.internships") },
+                  { to: "/portfolio", label: t(effLang, "more.portfolio") },
+                ].map((l, i, arr) => (
+                  <span key={l.to} className="flex items-center gap-1.5">
+                    <NavLink
+                      to={l.to}
+                      className={isTech
+                        ? techLight ? "rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 transition-colors hover:border-blurple hover:text-zinc-900" : "rounded-full border border-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-400 transition-colors hover:border-blurple/60 hover:text-zinc-100"
+                        : "rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-500 transition-colors hover:border-emerald-400 hover:text-emerald-800"}
+                    >
+                      {l.label}
+                    </NavLink>
+                    {i < arr.length - 1 && (
+                      <span aria-hidden className={isTech ? "text-zinc-600" : "text-stone-300"}>→</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            </div>
+          )}
           {/* link table: two columns side by side */}
           <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-[1fr_1fr_1fr] sm:gap-x-10">
             <nav aria-label="Product">
@@ -492,13 +452,15 @@ export function Shell() {
       </footer>
       )}
 
-      {/* mobile bottom tabs */}
+      {/* mobile bottom tabs: primaries plus a Menu tab that opens the full
+          sheet. The profile tab used to sit here, but the header avatar
+          already opens it — the fifth slot now reaches every section. */}
       {onboarded && (
       <nav aria-label="Mobile" className={`app-tabbar fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] sm:hidden ${
         isTech ? (techLight ? "border-zinc-200 bg-white/95" : "border-zinc-800 bg-ink/95") : "border-emerald-900/10 bg-[#f6f3ea]/95"
       }`}>
-        <div className="grid grid-cols-5 px-2">
-          {tabs.map((s) => (
+        <div className={`grid px-2 ${isStudentFamily ? "grid-cols-5" : "grid-cols-2"}`}>
+          {segs.map((s) => (
             <NavLink
               key={s.to}
               to={s.to}
@@ -526,8 +488,68 @@ export function Shell() {
               )}
             </NavLink>
           ))}
+          {isStudentFamily ? (
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={menuOpen}
+              aria-label={`${t(effLang, "nav.menu")}. ${t(effLang, "nav.allSections")}.`}
+              className={`relative flex min-h-[60px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold transition-colors ${
+                menuActive || menuOpen ? (isTech ? "text-blurple-soft" : "text-emerald-800") : isTech ? (techLight ? "text-zinc-400" : "text-zinc-500") : "text-stone-400"
+              }`}
+            >
+              {(menuActive || menuOpen) && (
+                <span className={`absolute left-1/2 top-0 h-1 w-8 -translate-x-1/2 rounded-b-full ${isTech ? "bg-blurple" : "bg-emerald-600"}`} aria-hidden />
+              )}
+              <span className="relative">
+                <CIcon icon={cilHamburgerMenu} width={21} height={21} aria-hidden />
+                {menuActive && (
+                  <span className={`absolute -right-1.5 -top-1 size-2.5 rounded-full ${isTech ? "bg-blurple" : "bg-emerald-600"}`} aria-hidden />
+                )}
+              </span>
+              {t(effLang, "nav.menu")}
+            </button>
+          ) : (
+            <NavLink
+              key={profileTab.to}
+              to={profileTab.to}
+              className={({ isActive }) =>
+                `relative flex min-h-[60px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-semibold transition-colors ${
+                  isActive ? (isTech ? "text-blurple-soft" : "text-emerald-800") : isTech ? (techLight ? "text-zinc-400" : "text-zinc-500") : "text-stone-400"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className={`absolute left-1/2 top-0 h-1 w-8 -translate-x-1/2 rounded-b-full ${isTech ? "bg-blurple" : "bg-emerald-600"}`} />
+                  )}
+                  <span className="relative">
+                    <CIcon icon={profileTab.icon} width={21} height={21} aria-hidden />
+                  </span>
+                  {profileTab.label}
+                </>
+              )}
+            </NavLink>
+          )}
         </div>
       </nav>
+      )}
+      {onboarded && isStudentFamily && (
+        <MobileMenuSheet
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          lang={effLang}
+          track={track}
+          isTech={isTech}
+          techLight={techLight}
+          groups={sheetGroups}
+          user={user}
+          roleText={roleText}
+          onSignOut={signOutUser}
+          onSignIn={handleSignIn}
+        />
       )}
       <CoachWidget />
     </div>

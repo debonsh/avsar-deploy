@@ -11,7 +11,7 @@ export default function Verify() {
 
   if (!res.ok) {
     return (
-      <Page title="verify" sub="credential check">
+      <Page title="verify" kicker="Trust · Credential" sub="credential check">
         <Card>
           <H2>Invalid signature</H2>
           <p className="font-mono text-sm text-red-400">[!!] {res.reason}</p>
@@ -25,7 +25,7 @@ export default function Verify() {
 
   const p = res.payload;
   return (
-    <Page title="verify" sub="credential check">
+    <Page title="verify" kicker="Trust · Credential" sub="credential check">
       {res.revoked && (
         <Card className="mb-4 border-red-900 bg-red-950">
           <H2>REVOKED by issuer</H2>

@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useNavigate } from "react-router";
 import CIcon from "@coreui/icons-react";
 import { cilSpa, cilChart, cilFire, cilCheckCircle, cilBolt, cilBriefcase } from "@coreui/icons";
-import { Page, Card, H2, Btn, inputCls, Radar } from "../components/ui.jsx";
+import { Page, Card, H2, Btn, Badge, Field, inputCls, Radar } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { requiredFor, gapVector, skillById } from "../data/taxonomy.js";
 import { profileForMatching } from "../lib/match.js";
@@ -22,7 +22,7 @@ import { collectXP } from "../lib/xp.js";
 import { loadJSON } from "../lib/storage.js";
 import { vaidyaLevel } from "../ayush/scoring.js";
 import { signInWithGoogle, authLabel } from "../lib/auth.js";
-import { getOrCreateDeviceId } from "../lib/identity.js";
+import { getOrCreateDeviceId, loadNickname, saveNickname } from "../lib/identity.js";
 import { AYUSH_ROLE } from "../data/ayushSeed.js";
 import { roleLabel } from "../lib/roles.js";
 import { TECH_LANES, targetRoleFor, profileMatchesTrack } from "../lib/track.js";
@@ -251,8 +251,149 @@ function ProfileCard({ form, resume, track, onEdit, onClear }) {
   );
 }
 
+// Account surface: identity header (avatar + name + email + provider/role
+// badges), display-name edit, session meta, sign-out/switch, danger zone.
+// Pattern: GitHub settings + Google account — one header, meta rows, then
+// actions. Guest state keeps the single Google CTA + email fallback.
+function AccountCard({ user, role, track, authNotice, onEditAnswers, onClear, onSignOut }) {
+  const nav = useNavigate();
+  const [nick, setNick] = useState(() => loadNickname() || "");
+  const [savedTick, setSavedTick] = useState(false);
+  const [authMsg, setAuthMsg] = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
+  const deviceId = getOrCreateDeviceId();
+
+  const metaName = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+  const emailPrefix = (user?.email || "").split("@")[0].replace(/[._-]+/g, " ").trim();
+  const displayName = (nick || metaName || emailPrefix || "Avsar student").trim();
+  const initial = (displayName[0] || "A").toUpperCase();
+  const providerRaw = String(user?.app_metadata?.provider || "").toLowerCase();
+  const provider = !user ? null : providerRaw === "google" ? "Google" : providerRaw === "email" ? "Email" : providerRaw ? providerRaw : "Email";
+
+  async function google() {
+    const { error } = await signInWithGoogle();
+    setAuthMsg(error || "redirecting to google…");
+  }
+
+  function saveName() {
+    saveNickname(nick.trim());
+    setSavedTick(true);
+    window.setTimeout(() => setSavedTick(false), 1500);
+  }
+
+  async function switchAccount() {
+    await onSignOut();
+    nav("/login");
+  }
+
+  if (!user) {
+    return (
+      <Card className="mt-4">
+        <H2>Account</H2>
+        <div className="flex items-center gap-3">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-lg font-bold text-zinc-400" aria-hidden>
+            ?
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-zinc-100">Guest on this device</p>
+            <p className="mt-0.5 font-mono text-xs text-zinc-500">device id: {deviceId} · {authLabel()}</p>
+          </div>
+          <Badge tone="amber" className="ml-auto shrink-0">local only</Badge>
+        </div>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          Scores and applications stay on this device. Sign in to carry your passport across devices.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Btn onClick={google}>Continue with Google</Btn>
+          <Btn variant="quiet" to="/login">Sign in with email</Btn>
+        </div>
+        {authMsg || authNotice ? (
+          <p className="mt-2 font-mono text-xs leading-5 text-zinc-500">{authMsg || authNotice}</p>
+        ) : null}
+      </Card>
+    );
+  }
+
+  const rows = [
+    { k: "Sign-in", v: provider || "Email" },
+    { k: "Role", v: roleLabel(role) },
+    { k: "Portal", v: track === "tech" ? "Tech" : track === "ayush" ? "Vaidya (AYUSH)" : "Not picked yet" },
+    { k: "Device", v: deviceId, mono: true },
+  ];
+
+  return (
+    <Card className="mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <H2 className="mb-0">Account</H2>
+        <Badge tone="green">signed in</Badge>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-blurple text-lg font-bold text-white" aria-hidden>
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-zinc-100">{displayName}</p>
+          <p className="truncate font-mono text-xs text-zinc-400">{user.email}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          <Badge tone="blurple">{provider}</Badge>
+          <Badge tone="zinc">{roleLabel(role)}</Badge>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Display name" hint="Shown on your passport and portfolio. Saved on this device.">
+          <div className="flex gap-2">
+            <input
+              className={inputCls}
+              value={nick}
+              onChange={(e) => setNick(e.target.value)}
+              onBlur={saveName}
+              placeholder={metaName || emailPrefix || "Your name"}
+              maxLength={24}
+              aria-label="Display name"
+            />
+            <Btn variant="quiet" onClick={saveName}>Save</Btn>
+          </div>
+        </Field>
+        {savedTick && <p className="mt-1.5 text-xs text-green-400" role="status">Saved.</p>}
+      </div>
+
+      <dl className="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
+        {rows.map((r) => (
+          <div key={r.k} className="flex items-center justify-between gap-3 px-3 py-2">
+            <dt className="text-xs text-zinc-500">{r.k}</dt>
+            <dd className={`truncate text-xs font-semibold text-zinc-200 ${r.mono ? "font-mono font-medium" : ""}`}>{r.v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Btn variant="quiet" onClick={onEditAnswers}>Edit profile answers</Btn>
+        <Btn variant="quiet" onClick={switchAccount}>Switch account</Btn>
+        <Btn variant="dangerQuiet" onClick={onSignOut}>Sign out</Btn>
+      </div>
+
+      <div className="mt-4 border-t border-zinc-800 pt-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Danger zone</p>
+        {confirmClear ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="w-full text-xs leading-5 text-zinc-400">Clears profile, resume, and interview answers on this device. Cloud rows stay.</p>
+            <Btn variant="dangerQuiet" size="sm" onClick={onClear}>Yes, clear it</Btn>
+            <Btn variant="ghost" size="sm" onClick={() => setConfirmClear(false)}>Keep it</Btn>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setConfirmClear(true)} className="mt-1.5 text-xs font-medium text-red-400 underline underline-offset-4 hover:text-red-300">
+            Clear local data…
+          </button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function Profile() {
-  const { track, role, setRole, profile, updateProfile, clearProfileState, resume, user, signOutUser } = useAvsar();
+  const { track, role, setRole, profile, updateProfile, clearProfileState, resume, user, authNotice, signOutUser } = useAvsar();
   const stored = profile;
   const isTech = track === "tech";
   const [form, setForm] = useState(() => initialForm(stored, track, role));
@@ -264,8 +405,6 @@ export default function Profile() {
       ? String(stored?.skills || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
       : []
   );
-  const [authMsg, setAuthMsg] = useState("");
-
   const roleChoices = PORTAL_ROLES[track] || PORTAL_ROLES.ayush;
   const isProfessional = ["industry", "faculty", "institute"].includes(form.role);
   const lane = isTech ? form.track || "sde" : "ayush";
@@ -277,11 +416,6 @@ export default function Profile() {
       : ["role", "skills", "background", "goal", "availability"];
   const stepLabels = { role: "Role", track: "Track", skills: "Skills", background: "Background", goal: "Goal", availability: "Availability" };
   const current = step === "done" ? "done" : stepIds[step];
-
-  async function google() {
-    const { error } = await signInWithGoogle();
-    setAuthMsg(error || "redirecting to google…");
-  }
 
   function set(id, v) {
     setForm((p) => ({ ...p, [id]: v }));
@@ -336,6 +470,7 @@ export default function Profile() {
   return (
     <Page
       title={step === "done" ? "Your profile" : "Set up your profile"}
+      kicker={step === "done" ? "Identity" : "Setup · Who are you"}
       sub={
         step === "done"
           ? "This tunes your matches and quest order. Stored on this device only."
@@ -568,21 +703,19 @@ export default function Profile() {
         />
       )}
 
-      <Card className="mt-4">
-        <H2>Account</H2>
-        <p className="font-mono text-xs text-zinc-500">device id: {getOrCreateDeviceId()} · {authLabel()}</p>
-        {user ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm text-zinc-200">{user.email}</span>
-            <Btn variant="quiet" onClick={signOutUser}>Sign out</Btn>
-          </div>
-        ) : (
-          <div className="mt-3">
-            <Btn variant="quiet" onClick={google}>Continue with Google</Btn>
-            {authMsg && <p className="mt-2 font-mono text-xs text-zinc-500">{authMsg}</p>}
-          </div>
-        )}
-      </Card>
+      <AccountCard
+        user={user}
+        role={role}
+        track={track}
+        authNotice={authNotice}
+        onEditAnswers={restart}
+        onClear={() => {
+          resetOnboarding();
+          clearProfileState();
+          window.location.reload();
+        }}
+        onSignOut={signOutUser}
+      />
     </Page>
   );
 }

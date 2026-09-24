@@ -17,6 +17,7 @@ export default function Faculty() {
   return (
     <Page
       title="Faculty"
+      kicker="Desk · Academicians"
       sub="FDPs, research fellowships, consultancy, and workshops worth your semester break."
     >
       <Card>

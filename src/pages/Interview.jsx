@@ -4,6 +4,8 @@
 // every AI call falls back to the offline bank/heuristic on any failure.
 // Offline or keyless devices get the exact same screens, bank-driven.
 import { useEffect, useMemo, useRef, useState } from "react";
+import CIcon from "@coreui/icons-react";
+import { cilMic } from "@coreui/icons";
 import { Page, Card, H2, Btn, Field, Chip, Empty, inputCls } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { QUESTIONNAIRE } from "../data/questionnaire.js";
@@ -139,7 +141,7 @@ export default function Interview() {
   }
 
   return (
-    <Page title="Interview" sub="Prove your experience first, then practice answers with grading. AI reads your resume when a key is set — otherwise the offline bank does.">
+    <Page title="Interview" kicker="Step 03 · Prove" sub="Prove your experience first, then practice answers with grading. AI reads your resume when a key is set — otherwise the offline bank does.">
       <Card>
         <div className="mb-3 flex items-center justify-between gap-2">
           <H2 className="mb-0">Evidence questionnaire ({ROLES[lane]?.label || lane})</H2>
@@ -240,7 +242,7 @@ export default function Interview() {
 
       {!resume && (
         <div className="mt-4">
-          <Empty title="Scores make practice personal" body="Answer the questionnaire and practice above without an account. Scoring a resume connects it all." action={<Btn to="/resume">Score your resume</Btn>} />
+          <Empty title="Scores make practice personal" body="Answer the questionnaire and practice above without an account. Scoring a resume connects it all." action={<Btn to="/resume">Score your resume</Btn>} icon={<CIcon icon={cilMic} width={20} height={20} />} />
         </div>
       )}
     </Page>

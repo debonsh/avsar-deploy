@@ -4,7 +4,7 @@
 // fixed to ayush on the vaidya portal; the pick writes profile.track, which is
 // also the lane every other page scores with.
 import { useMemo, useState } from "react";
-import { ArrowRight, ExternalLink, Leaf, Play } from "lucide-react";
+import { ArrowRight, ExternalLink, Leaf, Play, FileText } from "lucide-react";
 import { Page, Card, H2, Btn, Field, Chip, CountUp, Empty, Meter, inputCls, VaidyaLevel } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { scoreResume, calculateMainScore, normalizeScoreResult, rankFor, engLevelFor, rankRoles, ROLES } from "../lib/score.js";
@@ -76,6 +76,7 @@ export default function Resume() {
   return (
     <Page
       title="Resume score"
+      kicker="Step 01 · Score"
       sub="Five dimensions, every point traced to a line. Nothing hidden, nothing averaged away."
       actions={result && <Btn to="/quests">Turn gaps into quests <ArrowRight aria-hidden /></Btn>}
     >
@@ -133,6 +134,7 @@ export default function Resume() {
           <Empty
             title="No score yet"
             body="Press Score and this page turns into your breakdown: dimensions, skills, sections, and the exact fixes."
+            icon={<FileText className="size-5" />}
           />
           <Card>
             <H2>{isAyush ? "What a strong BAMS resume contains" : "What a strong tech resume contains"}</H2>

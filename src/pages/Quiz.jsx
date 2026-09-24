@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import CIcon from "@coreui/icons-react";
+import { cilPuzzle } from "@coreui/icons";
 import { Page, Card, H2, Btn, Chip, Empty } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { QUIZ, gradeSet, quizSample, loadQuizBest, saveQuizBest, todayDay } from "../data/quiz.js";
@@ -52,11 +54,12 @@ export default function Quiz() {
   return (
     <Page
       title={isAyush ? "BAMS Quiz" : "Quiz"}
+      kicker="Step 03 · Prove"
       sub={`${ROLES[lane]?.label || lane}: 10 questions sampled for you today. Best score counts toward your rank.`}
       actions={best > 0 && <Chip tone="green">Best: {best}/100</Chip>}
     >
       {bank.length === 0 && (
-        <Empty title="No quiz bank for this track yet" body="Switch to a track with a question bank from the Resume page." />
+        <Empty title="No quiz bank for this track yet" body="Switch to a track with a question bank from the Resume page." icon={<CIcon icon={cilPuzzle} width={20} height={20} />} />
       )}
 
       {bank.length > 0 && !started && (
@@ -71,7 +74,7 @@ export default function Quiz() {
         <Card>
           <div className="mb-4 flex items-center justify-between gap-2">
             <p className={`font-mono text-sm font-bold tabular-nums ${left < 60 ? "text-red-400" : "text-zinc-200"}`} role="timer" aria-label={`${fmt(left)} remaining`}>
-              ⏱ {fmt(left)}
+              {fmt(left)} <span className="font-normal text-zinc-500">left</span>
             </p>
             <Chip tone={left < 60 ? "red" : "zinc"}>{picks.filter((p) => p != null).length}/{questions.length} answered</Chip>
           </div>

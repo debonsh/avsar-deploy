@@ -4,6 +4,8 @@
 // matching, readiness). That close-the-loop moment is the demo's payoff.
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
+import CIcon from "@coreui/icons-react";
+import { cilTask } from "@coreui/icons";
 import { Page, Card, H2, Btn, Chip, Field, Empty, inputCls } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { JOBS } from "../data/jobs.js";
@@ -61,12 +63,13 @@ export default function Workspace() {
   if (!jobId) {
     const touched = pool.filter((j) => statusOf(events, j.id) || apps.some((a) => String(a.jobId) === String(j.id)));
     return (
-      <Page title="Workspace" sub="Internship progress, mentor feedback, and completion records — the loop that turns work into verified skills.">
+      <Page title="Workspace" kicker="Work · Verify" sub="Internship progress, mentor feedback, and completion records — the loop that turns work into verified skills.">
         {touched.length === 0 ? (
           <Empty
             title="No active internship yet"
             body="Save or apply to a role in the feed and it appears here with its pipeline and sign-off."
             action={<Btn to="/jobs">Browse the feed</Btn>}
+            icon={<CIcon icon={cilTask} width={20} height={20} />}
           />
         ) : (
           <div className="space-y-3">
@@ -93,8 +96,8 @@ export default function Workspace() {
   const job = pool.find((j) => String(j.id) === String(jobId));
   if (!job) {
     return (
-      <Page title="Workspace" sub="Unknown posting.">
-        <Empty title="Role not found" body="It may have been dismissed or removed." action={<Btn to="/workspace">Back to workspaces</Btn>} />
+      <Page title="Workspace" kicker="Work · Verify" sub="Unknown posting.">
+        <Empty title="Role not found" body="It may have been dismissed or removed." action={<Btn to="/workspace">Back to workspaces</Btn>} icon={<CIcon icon={cilTask} width={20} height={20} />} />
       </Page>
     );
   }
@@ -106,6 +109,7 @@ export default function Workspace() {
   return (
     <Page
       title={job.title}
+      kicker="Work · Verify"
       sub={`${job.company} · ${job.loc} · ${job.type}`}
       actions={<Btn variant="quiet" to="/workspace">All workspaces</Btn>}
     >

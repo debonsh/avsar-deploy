@@ -8,7 +8,7 @@ import { loadJSON, saveJSON } from "../lib/storage.js";
 import { loadRole, saveRole } from "../lib/roles.js";
 import { loadTrack, saveTrack, laneFor } from "../lib/track.js";
 import { loadProfile, saveProfile, clearProfile } from "../lib/profile.js";
-import { getUser, onAuthChange, signOut } from "../lib/auth.js";
+import { getUser, onAuthChange, signOut, finishOAuthReturn } from "../lib/auth.js";
 import {
   funnelCounts, loadJobEvents, recordJobEvent, saveAssessment,
   loadRemoteProfile, loadRemoteRoles, reconcileProfile, pickRole, saveProfileRemote, claimStudentRole,
@@ -32,6 +32,12 @@ export function AvsarProvider({ children }) {
   const [dismissed, setDismissed] = useState(() => loadJSON(K_DISMISSED, []));
   const [customJobs, setCustomJobs] = useState(() => loadCustomJobs());
   const [user, setUser] = useState(null);
+  // authReady flips once the first session read lands, so the auth gate can
+  // hold a splash instead of flashing /login at a signed-in user on reload.
+  const [authReady, setAuthReady] = useState(false);
+  // authNotice carries a boot-time OAuth verdict ("Google sent us back but…")
+  // to the Login page. Empty means nothing to report.
+  const [authNotice, setAuthNotice] = useState("");
   const syncedFor = useRef(null);
 
   const setTrack = useCallback((v) => {
@@ -96,6 +102,7 @@ export function AvsarProvider({ children }) {
     // Once per user per session — a token refresh must not re-run the merge.
     const sync = async (u) => {
       setUser(u);
+      setAuthReady(true);
       if (!u?.id || syncedFor.current === u.id) return;
       syncedFor.current = u.id;
       // a role issued in user_roles outranks whatever this device guessed.
@@ -127,6 +134,13 @@ export function AvsarProvider({ children }) {
       }
     };
     getUser().then(sync).catch(() => {});
+    // Resolve a Google return (?code= / ?error=) exactly once per load, so a
+    // failed exchange surfaces as words instead of a silent bounce to /login.
+    finishOAuthReturn()
+      .then((msg) => {
+        if (msg) setAuthNotice(msg);
+      })
+      .catch(() => {});
     return onAuthChange(sync);
   }, []);
 
@@ -137,12 +151,12 @@ export function AvsarProvider({ children }) {
     () => ({
       track, setTrack, lane, role, setRole, profile, updateProfile, clearProfileState,
       resume, saveResume, events, addEvent, dismissed, toggleDismiss, customJobs,
-      addCustomJob, funnel, user, signOutUser,
+      addCustomJob, funnel, user, authReady, authNotice, signOutUser,
     }),
     [
       track, setTrack, lane, role, setRole, profile, updateProfile, clearProfileState,
       resume, saveResume, events, addEvent, dismissed, toggleDismiss, customJobs,
-      addCustomJob, funnel, user, signOutUser,
+      addCustomJob, funnel, user, authReady, authNotice, signOutUser,
     ]
   );
   return <AvsarContext.Provider value={value}>{children}</AvsarContext.Provider>;

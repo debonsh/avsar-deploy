@@ -30,23 +30,35 @@ const TABS = [
 
 function JourneyBar({ progress }) {
   const segs = [
-    { label: "Profile", v: progress.profile, w: 40 },
-    { label: "Resume", v: progress.resume, w: 30 },
-    { label: "Interview", v: progress.interview, w: 30 },
+    { n: "01", label: "Profile", v: progress.profile, w: 40 },
+    { n: "02", label: "Resume", v: progress.resume, w: 30 },
+    { n: "03", label: "Interview", v: progress.interview, w: 30 },
   ];
   return (
     <div className="mb-5">
       <div className="mb-1.5 flex items-baseline justify-between">
-        <p className="text-xs font-semibold text-stone-500">Your Avsar profile</p>
+        <p className="text-xs font-semibold text-stone-500">
+          <span className="mr-1.5 font-mono tabular-nums text-blurple-soft">
+            {segs.filter((s) => s.v > 0).length}/3
+          </span>
+          Your Avsar profile
+        </p>
         <p className="font-mono text-xs font-bold tabular-nums text-blurple-soft">{progress.total}% complete</p>
       </div>
       <div className="flex gap-1" role="progressbar" aria-valuenow={progress.total} aria-valuemin="0" aria-valuemax="100" aria-label="Profile completion">
         {segs.map((s) => (
-          <span key={s.label} title={`${s.label} ${s.v}/${s.w}`} className="h-2 overflow-hidden rounded-full bg-stone-200" style={{ flex: s.w }}>
+          <span key={s.label} title={`${s.n} ${s.label} ${s.v}/${s.w}`} className="h-2 overflow-hidden rounded-full bg-stone-200" style={{ flex: s.w }}>
             <span className={`block h-full rounded-full ${s.v > 0 ? "bg-blurple" : ""}`} style={{ width: s.v > 0 ? "100%" : "0%" }} />
           </span>
         ))}
       </div>
+      <ol className="mt-2 flex gap-1" aria-hidden>
+        {segs.map((s) => (
+          <li key={s.label} style={{ flex: s.w }} className={`font-mono text-[10px] uppercase tracking-widest ${s.v > 0 ? "text-blurple-soft" : "text-stone-400"}`}>
+            {s.n} {s.v > 0 ? "✓ " : ""}{s.label}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -193,6 +205,7 @@ export default function Journey() {
   return (
     <Page
       title={stage === "congrats" ? "You did it" : "Start your journey with Avsar"}
+      kicker={stage === "congrats" ? "Loop complete" : "Guided setup · 3 stages"}
       sub={
         stage === "resume"
           ? "Add your resume, see your score, close the gaps."

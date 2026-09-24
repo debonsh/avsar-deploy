@@ -5,9 +5,11 @@
 import CIcon from "@coreui/icons-react";
 import {
   cilLeaf, cilBriefcase, cilBook, cilChatBubble, cilCheckCircle, cilArrowRight,
-  cilChart, cilBadge, cilCompass, cilMedicalCross, cilFire, cilStar, cilClock,
+  cilChart, cilBadge, cilCompass, cilMedicalCross, cilStar,
 } from "@coreui/icons";
-import { Page, Card, H2, Btn, Chip, Reveal } from "../components/ui.jsx";
+import { Page, Card, H2, Btn, Chip, Reveal, SectionHead, IconTile, NextStep, FirstRun } from "../components/ui.jsx";
+import { nextStep } from "../lib/nextstep.js";
+import { t, loadLang } from "../lib/i18n.js";
 import { useAvsar } from "../app/store.jsx";
 import { loadProfile } from "../lib/profile.js";
 import { JOBS, matchJobs } from "../data/jobs.js";
@@ -19,21 +21,6 @@ import { onboardingProgress } from "../lib/onboarding.js";
 import { vaidyaLevel } from "../ayush/scoring.js";
 import StreakMeter from "../components/StreakMeter.jsx";
 import XpMeter from "../components/XpMeter.jsx";
-
-const TONES = {
-  emerald: "bg-emerald-100 text-emerald-800",
-  amber: "bg-amber-100 text-amber-800",
-  sky: "bg-sky-100 text-sky-800",
-  rose: "bg-rose-100 text-rose-800",
-};
-
-function IconBadge({ icon, tone = "emerald", size = 18 }) {
-  return (
-    <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-xl ${TONES[tone]}`} aria-hidden>
-      <CIcon icon={icon} width={size} height={size} />
-    </span>
-  );
-}
 
 function Ring({ value }) {
   const r = 34;
@@ -54,7 +41,8 @@ function Ring({ value }) {
 }
 
 export default function AyushHome() {
-  const { resume } = useAvsar();
+  const { resume, funnel } = useAvsar();
+  const lang = loadLang();
   const profile = loadProfile() || {};
   const result = resume?.result || null;
   const found = result?.found || [];
@@ -68,14 +56,23 @@ export default function AyushHome() {
     resumeDone: Boolean(result),
     interviewDone: interviewBest > 0,
   });
+  // The single next action. Hero CTA, reminder card, and footer loop all
+  // read this one value, so the page can never point two ways at once.
+  const step = nextStep({
+    profileDone: Boolean(profile.skills && profile.goal),
+    resumeDone: Boolean(result),
+    questsDone: pairs > 0,
+    interviewDone: interviewBest > 0,
+    appliedCount: funnel?.applied || 0,
+  });
   const topJobs = matchJobs("ayush", main, found, JOBS).slice(0, 3);
   const skills = String(profile.skills || "").split(",").map((s) => s.trim()).filter(Boolean);
 
   const stats = [
-    { icon: cilChart, tone: "emerald", label: "Readiness", value: `${main}/100` },
-    { icon: cilBadge, tone: "sky", label: "Skills proven", value: String(found.length || skills.length) },
+    { icon: cilChart, tone: "green", label: "Readiness", value: `${main}/100` },
+    { icon: cilBadge, tone: "blue", label: "Skills proven", value: String(found.length || skills.length) },
     { icon: cilChatBubble, tone: "amber", label: "Interview best", value: interviewBest > 0 ? String(interviewBest) : "—" },
-    { icon: cilCheckCircle, tone: "rose", label: "Quest pairs", value: String(pairs) },
+    { icon: cilCheckCircle, tone: "red", label: "Quest pairs", value: String(pairs) },
   ];
 
   return (
@@ -87,6 +84,8 @@ export default function AyushHome() {
           : "Your quests, matches, and coach — one screen."
       }
     >
+      {/* fresh device: the loop as a table of contents, dismissable */}
+      {loop.total === 0 && <FirstRun lang={lang} className="mb-4" />}
       {/* hero band */}
       <Reveal>
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-700 px-5 py-6 text-white sm:px-7">
@@ -97,7 +96,7 @@ export default function AyushHome() {
             className="pointer-events-none absolute -right-10 -top-10 text-white opacity-10"
           />
           <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-200">
-            <CIcon icon={cilCompass} width={14} height={14} /> Avsar command center
+            <CIcon icon={cilCompass} width={14} height={14} /> Vaidya command center
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
             <div className="min-w-0">
@@ -115,15 +114,9 @@ export default function AyushHome() {
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {loop.total < 100 ? (
-                  <Btn to="/journey" className="bg-white text-emerald-900 hover:bg-emerald-50">
-                    Continue journey <CIcon icon={cilArrowRight} width={15} height={15} />
-                  </Btn>
-                ) : (
-                  <Btn to="/jobs" className="bg-white text-emerald-900 hover:bg-emerald-50">
-                    Today&apos;s matches <CIcon icon={cilArrowRight} width={15} height={15} />
-                  </Btn>
-                )}
+                <Btn to={step.to} className="bg-white text-emerald-900 hover:bg-emerald-50">
+                  {t(lang, `next.${step.id}.title`)} <CIcon icon={cilArrowRight} width={15} height={15} />
+                </Btn>
                 <Btn to="/home?chat=1" variant="quiet" className="border border-white/30 bg-transparent text-white hover:bg-white/10">
                   Ask the coach
                 </Btn>
@@ -143,7 +136,7 @@ export default function AyushHome() {
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label} className="flex items-center gap-3 p-4">
-            <IconBadge icon={s.icon} tone={s.tone} />
+            <IconTile tone={s.tone}><CIcon icon={s.icon} width={18} height={18} /></IconTile>
             <div>
               <p className="font-display text-xl font-bold tabular-nums text-stone-900">{s.value}</p>
               <p className="text-xs text-stone-500">{s.label}</p>
@@ -153,13 +146,7 @@ export default function AyushHome() {
       </div>
 
       {loop.total < 100 && (
-        <Card className="mt-4 flex flex-wrap items-center gap-3 border-amber-300 bg-amber-50">
-          <IconBadge icon={cilFire} tone="amber" />
-          <p className="min-w-0 flex-1 text-sm text-stone-700">
-            Profile {loop.total}% — finish the loop to unlock full matches.
-          </p>
-          <Btn to="/journey" size="sm">Continue journey</Btn>
-        </Card>
+        <NextStep step={step} lang={lang} className="mt-4" />
       )}
 
       {/* proof of work */}
@@ -169,14 +156,12 @@ export default function AyushHome() {
       </div>
 
       {/* today's rounds */}
-      <h2 className="mb-3 mt-6 flex items-center gap-2 font-display text-lg font-bold text-stone-900">
-        <CIcon icon={cilClock} width={18} height={18} className="text-emerald-700" /> Today&apos;s rounds
-      </h2>
+      <SectionHead kicker="Today" title="Today's rounds" className="mt-6" />
       <div className="grid gap-4 lg:grid-cols-3">
         <Reveal>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilBook} tone="amber" />
+              <IconTile tone="amber"><CIcon icon={cilBook} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Round 1 — learn</H2>
             </div>
             {missing.length === 0 && !result ? (
@@ -200,7 +185,7 @@ export default function AyushHome() {
         <Reveal delay={0.06}>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilBriefcase} tone="emerald" />
+              <IconTile tone="green"><CIcon icon={cilBriefcase} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Round 2 — apply</H2>
             </div>
             <ul className="space-y-2">
@@ -221,7 +206,7 @@ export default function AyushHome() {
         <Reveal delay={0.12}>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilChatBubble} tone="emerald" />
+              <IconTile tone="green"><CIcon icon={cilChatBubble} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Round 3 — ask</H2>
             </div>
             <p className="flex items-start gap-1.5 text-sm leading-6 text-stone-600">

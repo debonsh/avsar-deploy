@@ -4,7 +4,7 @@
 // course→project ladder on tech.
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Check, ExternalLink } from "lucide-react";
+import { Check, ExternalLink, Target, Trophy } from "lucide-react";
 import { Page, Card, Btn, Chip, CountUp, Field, Empty, Meter, inputCls } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { roadmapGenerator } from "../lib/roadmapGenerator.js";
@@ -135,11 +135,12 @@ export default function Quests() {
 
   if (!resume) {
     return (
-      <Page title="Quests" sub="Turn every missing skill into proof. Finish a week, unlock more roles.">
+      <Page title="Quests" kicker="Step 02 · Quest" sub="Turn every missing skill into proof. Finish a week, unlock more roles.">
         <Empty
           title="No resume, no quests"
           body="Quests are built from the gaps in your resume. Score it once and your plan writes itself."
           action={<Btn to="/resume">Score your resume</Btn>}
+          icon={<Target className="size-5" />}
         />
       </Page>
     );
@@ -147,11 +148,12 @@ export default function Quests() {
 
   if (!displayWeeks.length) {
     return (
-      <Page title="Quests" sub="Turn every missing skill into proof. Finish a week, unlock more roles.">
+      <Page title="Quests" kicker="Step 02 · Quest" sub="Turn every missing skill into proof. Finish a week, unlock more roles.">
         <Empty
           title="Nothing missing. Seriously."
           body="Your resume covers this track end to end. New scores rebuild this plan if anything slips."
           action={<Btn to="/jobs">Browse eligible roles</Btn>}
+          icon={<Trophy className="size-5" />}
         />
       </Page>
     );
@@ -168,6 +170,7 @@ export default function Quests() {
   return (
     <Page
       title={isAyush ? "BAMS Quests" : "Quests"}
+      kicker="Step 02 · Quest"
       sub={planSub}
     >
       <Card className="mb-4">

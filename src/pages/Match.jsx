@@ -2,6 +2,8 @@
 // breakdown for THIS student against their best-fit role, and the decay rule.
 // Recruiters see the same math on the other side — no black box.
 import { useMemo } from "react";
+import CIcon from "@coreui/icons-react";
+import { cilLoop } from "@coreui/icons";
 import { Page, Card, H2, Chip, Meter, Empty, Btn } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { MATCH_WEIGHTS, matchScore, profileForMatching } from "../lib/match.js";
@@ -55,6 +57,7 @@ export default function Match() {
   return (
     <Page
       title="How we match"
+      kicker="Trust · The formula"
       sub="One published formula scores every internship, job, and shortlist — the same number for you and the recruiter. Weights below are the live source, not a slide."
     >
       <Card>
@@ -95,6 +98,7 @@ export default function Match() {
             title="No skill profile yet"
             body={`Score your resume once and this card computes your real five-factor fit against the ${target.label} role.`}
             action={<Btn to="/resume">Score your resume</Btn>}
+            icon={<CIcon icon={cilLoop} width={20} height={20} />}
           />
         ) : (
           <>

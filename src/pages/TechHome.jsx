@@ -4,9 +4,11 @@
 import CIcon from "@coreui/icons-react";
 import {
   cilDescription, cilBriefcase, cilBook, cilChatBubble, cilCheckCircle,
-  cilArrowRight, cilChart, cilBadge, cilFire, cilClock,
+  cilArrowRight, cilChart, cilBadge, cilFire,
 } from "@coreui/icons";
-import { Page, Card, H2, Btn, Chip, Reveal } from "../components/ui.jsx";
+import { Page, Card, H2, Btn, Chip, Reveal, SectionHead, IconTile, NextStep, FirstRun } from "../components/ui.jsx";
+import { nextStep } from "../lib/nextstep.js";
+import { t } from "../lib/i18n.js";
 import { useAvsar } from "../app/store.jsx";
 import { TECH_JOBS, matchJobs } from "../data/jobs.js";
 import { coursesFor } from "../data/courses.js";
@@ -16,21 +18,6 @@ import { loadJSON } from "../lib/storage.js";
 import { onboardingProgress } from "../lib/onboarding.js";
 import StreakMeter from "../components/StreakMeter.jsx";
 import XpMeter from "../components/XpMeter.jsx";
-
-const TONES = {
-  blurple: "bg-blurple/15 text-blurple-soft",
-  zinc: "bg-zinc-900 text-zinc-300",
-  amber: "bg-amber-950 text-amber-300",
-  red: "bg-red-950 text-red-300",
-};
-
-function IconBadge({ icon, tone = "blurple", size = 18 }) {
-  return (
-    <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-xl ${TONES[tone]}`} aria-hidden>
-      <CIcon icon={icon} width={size} height={size} />
-    </span>
-  );
-}
 
 function Ring({ value }) {
   const r = 34;
@@ -51,7 +38,7 @@ function Ring({ value }) {
 }
 
 export default function TechHome() {
-  const { lane, profile, resume } = useAvsar();
+  const { lane, profile, resume, funnel } = useAvsar();
   const p = profile || {};
   const result = resume?.result || null;
   const found = result?.found || [];
@@ -66,6 +53,15 @@ export default function TechHome() {
     profileDone: Boolean(p.track && p.skills && p.goal),
     resumeDone: Boolean(result),
     interviewDone: interviewBest > 0,
+  });
+  // The single next action. Hero CTA, reminder card, and footer loop all
+  // read this one value, so the page can never point two ways at once.
+  const step = nextStep({
+    profileDone: Boolean(p.track && p.skills && p.goal),
+    resumeDone: Boolean(result),
+    questsDone: pairs > 0,
+    interviewDone: interviewBest > 0,
+    appliedCount: funnel?.applied || 0,
   });
   const topJobs = matchJobs(lane, main, found, TECH_JOBS).slice(0, 3);
   const skills = String(p.skills || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -87,6 +83,8 @@ export default function TechHome() {
           : `${roleName} · score a resume to start the loop`
       }
     >
+      {/* fresh device: the loop as a table of contents, dismissable */}
+      {loop.total === 0 && <FirstRun lang="en" className="mb-4" />}
       {/* hero band */}
       <Reveal>
         <section className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 px-5 py-6 sm:px-7">
@@ -94,7 +92,7 @@ export default function TechHome() {
           <div className="pointer-events-none absolute -bottom-24 -right-24 size-72 rounded-full bg-blurple/25 blur-3xl" aria-hidden />
           <div className="relative">
           <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-blurple-soft">
-            <CIcon icon={cilDescription} width={14} height={14} /> Avsar command center
+            <CIcon icon={cilDescription} width={14} height={14} /> Tech command center
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-5">
             <div className="min-w-0">
@@ -112,8 +110,8 @@ export default function TechHome() {
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Btn to={loop.total < 100 ? "/journey" : "/jobs"}>
-                  {loop.total < 100 ? "Continue journey" : "Today's matches"} <CIcon icon={cilArrowRight} width={15} height={15} />
+                <Btn to={step.to}>
+                  {t("en", `next.${step.id}.title`)} <CIcon icon={cilArrowRight} width={15} height={15} />
                 </Btn>
                 <Btn to="/home?chat=1" variant="quiet">
                   Ask the coach
@@ -135,7 +133,7 @@ export default function TechHome() {
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label} className="flex items-center gap-3 p-4">
-            <IconBadge icon={s.icon} tone={s.tone} />
+            <IconTile tone={s.tone}><CIcon icon={s.icon} width={18} height={18} /></IconTile>
             <div>
               <p className="font-display text-xl font-bold tabular-nums text-zinc-50">{s.value}</p>
               <p className="text-xs text-zinc-500">{s.label}</p>
@@ -145,13 +143,7 @@ export default function TechHome() {
       </div>
 
       {loop.total < 100 && (
-        <Card className="mt-4 flex flex-wrap items-center gap-3 border-amber-900 bg-amber-950">
-          <IconBadge icon={cilFire} tone="amber" />
-          <p className="min-w-0 flex-1 text-sm text-amber-300">
-            Profile {loop.total}% — finish the loop to unlock full matches.
-          </p>
-          <Btn to="/journey" size="sm">Continue journey</Btn>
-        </Card>
+        <NextStep step={step} lang="en" className="mt-4" />
       )}
 
       {/* proof of work */}
@@ -161,14 +153,12 @@ export default function TechHome() {
       </div>
 
       {/* today's moves */}
-      <h2 className="mb-3 mt-6 flex items-center gap-2 font-display text-lg font-bold text-zinc-50">
-        <CIcon icon={cilClock} width={18} height={18} className="text-blurple-soft" /> Today&apos;s moves
-      </h2>
+      <SectionHead kicker="Today" title="Today's moves" className="mt-6" />
       <div className="grid gap-4 lg:grid-cols-3">
         <Reveal>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilBook} tone="amber" />
+              <IconTile tone="amber"><CIcon icon={cilBook} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Move 1 — learn</H2>
             </div>
             {missing.length === 0 && !result ? (
@@ -192,7 +182,7 @@ export default function TechHome() {
         <Reveal delay={0.06}>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilBriefcase} tone="blurple" />
+              <IconTile tone="blurple"><CIcon icon={cilBriefcase} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Move 2 — apply</H2>
             </div>
             <ul className="space-y-2">
@@ -213,7 +203,7 @@ export default function TechHome() {
         <Reveal delay={0.12}>
           <Card className="flex h-full flex-col">
             <div className="mb-2 flex items-center gap-2.5">
-              <IconBadge icon={cilChatBubble} tone="blurple" />
+              <IconTile tone="blurple"><CIcon icon={cilChatBubble} width={18} height={18} /></IconTile>
               <H2 className="mb-0">Move 3 — ask</H2>
             </div>
             <p className="flex items-start gap-1.5 text-sm leading-6 text-zinc-300">

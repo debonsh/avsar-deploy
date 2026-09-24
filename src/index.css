@@ -11,9 +11,8 @@
   --color-blurple-deep: #4752c4;
   --color-blurple-soft: #9aa4ff;
   --color-sage: #bfbfad;
-
-  --radius-lg: 0;
-  --radius-xl: 0;
+  --color-gold: #c77b21;
+  --color-gold-soft: #f0b45a;
 }
 
 /* Type split: Bricolage display headlines, Inter body, DM Mono system24 chrome.
@@ -29,6 +28,19 @@ body {
 
 .font-display {
   letter-spacing: -0.02em;
+}
+
+/* [app] display voice per universe. font-display resolves var(--font-display)
+   at use time, so scoping the var re-voices every headline with no markup
+   churn. Landing (no portal) keeps Bricolage. */
+.tech-dark, .tech-light {
+  --font-display: "Space Grotesk", "Noto Sans Devanagari", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+.ayush-dark, .ayush-light {
+  --font-display: "Fraunces", "Noto Sans Devanagari", Georgia, serif;
+}
+.ayush-dark .font-display, .ayush-light .font-display {
+  letter-spacing: -0.01em;
 }
 
 /* TUI block cursor, system24 ascii-loader energy */
@@ -181,6 +193,13 @@ body {
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #27272a; border-radius: 8px; }
 
+/* [app] nav surfaces scroll bar-free: the Menu panel + sheet are short
+   grouped lists, the bar is chrome noise. Scroll itself still works —
+   touch, wheel, and arrow-key travel are untouched. Scoped here on purpose:
+   page-level scrollbars stay visible. */
+.nav-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.nav-scroll::-webkit-scrollbar { display: none; }
+
 /* [app] dark theme: the zinc/blurple base is already dark, so this layer only
    remaps the light-hardcoded utilities (stone scale, white surfaces, emerald
    tints) that the newer screens use. Warm-dark panels keep the paper feel. */
@@ -267,6 +286,9 @@ body {
 .tech-light .text-zinc-600 { color: #71717a; }
 .tech-light [class*="text-blurple-soft"] { color: #4752c4; }
 .tech-light [class*="text-green-300"] { color: #15803d; }
+/* emerald-300/400 are floor-legible on dark only; the landing's Vaidya legend
+   and AYUSH card render them inside this scope, so lift them like ayush-light. */
+.tech-light [class*="text-emerald-300"], .tech-light [class*="text-emerald-400"] { color: #047857; }
 .tech-light .bg-green-950 { background-color: #f0fdf4; }
 .tech-light .border-green-900 { border-color: #bbf7d0; }
 .tech-light .bg-amber-950 { background-color: #fffbeb; }

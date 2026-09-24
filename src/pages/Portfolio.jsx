@@ -92,7 +92,7 @@ export default function Portfolio() {
   }
 
   return (
-    <Page title="Portfolio" sub="Everything you have proven, in one place. Your public ID lets colleges verify it.">
+    <Page title="Portfolio" kicker="Step 05 · Showcase" sub="Everything you have proven, in one place. Your public ID lets colleges verify it.">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -117,6 +117,9 @@ export default function Portfolio() {
               <p className="mt-1 text-xs leading-5 text-zinc-400">scan to verify. signature recomputes offline.</p>
               <Link to={verifyUrl(code)} className="mt-1 inline-block font-mono text-xs text-blurple-soft underline underline-offset-4">
                 open verify page →
+              </Link>
+              <Link to={`/u/${id}`} className="mt-1 block font-mono text-xs text-blurple-soft underline underline-offset-4">
+                open public passport →
               </Link>
               {rev ? (
                 <p className="mt-2 rounded-lg border border-red-900 bg-red-950 px-2 py-1.5 font-mono text-[11px] text-red-300">

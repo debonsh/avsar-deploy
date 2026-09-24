@@ -8,17 +8,23 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { animate, motion, useReducedMotion } from "motion/react";
+import { t } from "../lib/i18n.js";
+import { loadJSON, saveJSON } from "../lib/storage.js";
+import { LOOP_STEPS } from "../lib/nextstep.js";
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export function Page({ title, sub, actions, children }) {
+export function Page({ title, sub, kicker, actions, children }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {(title || actions) && (
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div className="max-w-2xl">
+            {kicker && (
+              <p className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-zinc-500">{kicker}</p>
+            )}
             {title && (
               <h1 className="text-balance font-display text-2xl font-bold tracking-[-0.02em] text-zinc-50 sm:text-3xl">
                 {title}
@@ -51,7 +57,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-blurple text-white hover:bg-blurple-deep",
+        primary: "bg-blurple font-semibold text-white shadow-lg shadow-black/20 hover:bg-blurple-deep",
         quiet:
           "border border-zinc-800 bg-zinc-950 text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900",
         dangerQuiet: "border border-zinc-800 text-red-400 hover:bg-red-950",
@@ -268,9 +274,14 @@ export function CountUp({ to, className }) {
 }
 
 // Empty states name the cause and the one action that fills them.
-export function Empty({ title, body, action }) {
+export function Empty({ title, body, action, icon }) {
   return (
     <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950 px-6 py-10 text-center">
+      {icon && (
+        <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-400" aria-hidden>
+          {icon}
+        </span>
+      )}
       <p className="text-balance text-sm font-semibold text-zinc-100">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-pretty text-sm leading-6 text-zinc-400">{body}</p>
       {action && <div className="mt-4 flex justify-center">{action}</div>}
@@ -289,6 +300,117 @@ export function ErrorBox({ message, onRetry }) {
         </Btn>
       )}
     </div>
+  );
+}
+
+// Consistent section header: mono kicker, display title, sub, optional action.
+// Replaces the ad-hoc h2 rows scattered across screens.
+export function SectionHead({ kicker, title, sub, action, className = "" }) {
+  return (
+    <div className={cn("mb-4 flex flex-wrap items-end justify-between gap-3", className)}>
+      <div className="max-w-2xl">
+        {kicker && (
+          <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-zinc-500">{kicker}</p>
+        )}
+        {title && (
+          <h2 className="font-display text-lg font-bold tracking-tight text-zinc-50">{title}</h2>
+        )}
+        {sub && <p className="mt-1 text-sm leading-6 text-zinc-400">{sub}</p>}
+      </div>
+      {action && <div className="flex flex-wrap gap-2">{action}</div>}
+    </div>
+  );
+}
+
+// One icon tile, every screen the same. Tones reuse the badge contract so
+// every theme remap (ayush-dark, tech-light) already covers them.
+export function IconTile({ tone = "zinc", className, children }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex size-9 shrink-0 items-center justify-center rounded-xl border",
+        badgeVariants({ tone }),
+        className
+      )}
+      aria-hidden
+    >
+      {children}
+    </span>
+  );
+}
+
+// The single next action, computed by lib/nextstep.js. One brain, many faces:
+// home heroes, journey exits, and empty states all render this card.
+export function NextStep({ step, lang = "en", className = "" }) {
+  if (!step) return null;
+  return (
+    <Link
+      to={step.to}
+      className={cn(
+        "group flex min-h-[76px] items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition-colors hover:border-zinc-500",
+        className
+      )}
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+          {t(lang, "next.kicker")}
+        </span>
+        <span className="mt-0.5 block text-sm font-bold text-zinc-100">
+          {t(lang, `next.${step.id}.title`)}
+        </span>
+        <span className="mt-0.5 block truncate text-xs leading-5 text-zinc-500">
+          {t(lang, `next.${step.id}.body`)}
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-blurple px-3.5 py-2 text-xs font-semibold text-white transition-colors group-hover:bg-blurple-deep">
+        {t(lang, "next.cta")} <span aria-hidden>→</span>
+      </span>
+    </Link>
+  );
+}
+
+// First-run strip for Home at loop 0: the public 4-step loop, each step a
+// link. Dismissable, remembered per device. Not a tour, a table of contents.
+export function FirstRun({ lang = "en", storageKey = "avsar-firstrun-v1", className = "" }) {
+  const [dismissed, setDismissed] = useState(() => Boolean(loadJSON(storageKey, false)));
+  if (dismissed) return null;
+  const dismiss = () => {
+    saveJSON(storageKey, true);
+    setDismissed(true);
+  };
+  return (
+    <section
+      aria-label={t(lang, "firstrun.title")}
+      className={cn("rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5", className)}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-500">
+          {t(lang, "firstrun.title")}
+        </p>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-200"
+        >
+          {t(lang, "firstrun.dismiss")}
+        </button>
+      </div>
+      <ol className="mt-3 grid gap-2 sm:grid-cols-4">
+        {LOOP_STEPS.map((s, i) => (
+          <li key={s.id}>
+            <Link
+              to={s.to}
+              className="flex h-full items-center gap-3 rounded-xl border border-zinc-800 px-3 py-2.5 transition-colors hover:border-zinc-500"
+            >
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blurple/15 font-mono text-xs font-bold text-blurple-soft" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="text-sm font-semibold text-zinc-200">{t(lang, `loop.${s.id}`)}</span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 

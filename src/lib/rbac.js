@@ -11,8 +11,9 @@ export const ROLE_HOME = {
   institute: "/institute",
 };
 
-// open to everyone: the chooser, public profiles, and email verification links.
-const PUBLIC_SEGMENTS = new Set(["", "u", "verify"]);
+// open to everyone: the chooser, public profiles, email verification links,
+// and the sign-in page (gating /login itself would deadlock the gate).
+const PUBLIC_SEGMENTS = new Set(["", "u", "verify", "login"]);
 
 // segment → the roles allowed in it.
 // /profile is identity, not engine: every role opens it (Google connect,
@@ -47,7 +48,7 @@ export function canAccess(role, path = "") {
 }
 
 // Routes that must render before a portal has been picked: the chooser itself,
-// public profiles, and emailed verification links.
+// public profiles, emailed verification links, and the sign-in page.
 export function isPublicPath(path = "") {
   return PUBLIC_SEGMENTS.has(String(path).split("/")[1] || "");
 }

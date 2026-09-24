@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CIcon from "@coreui/icons-react";
-import { cilBriefcase, cilLocationPin, cilClock, cilExternalLink } from "@coreui/icons";
-import { Page, Card, H2, Btn, Field, Chip, Empty, ErrorBox, Donut, DONUT_COLORS_EXPORT, inputCls } from "../components/ui.jsx";
+import { cilBriefcase, cilLocationPin, cilClock, cilExternalLink, cilSearch } from "@coreui/icons";
+import { Page, Card, H2, Btn, Field, Chip, Empty, ErrorBox, Donut, DONUT_COLORS_EXPORT, SectionHead, inputCls } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { JOBS, TECH_JOBS, matchJobs } from "../data/jobs.js";
 import { EXTRA_JOBS } from "../data/seedJobsExtra.js";
@@ -206,6 +206,7 @@ export default function Jobs() {
   return (
     <Page
       title="Internships & Jobs"
+      kicker="Step 04 · Apply"
       sub={
         isTech
           ? `${pool.length} curated openings · internships first, then fresher roles. Fit is computed from your resume.`
@@ -284,10 +285,7 @@ export default function Jobs() {
             </div>
           </section>
           <section aria-label="Closing soon" className="mt-4">
-            <div className="flex items-baseline justify-between gap-2 px-1">
-              <h2 className="text-sm font-semibold text-stone-800">Closing soon</h2>
-              <p className="text-xs text-stone-400">Confirm dates on the source site</p>
-            </div>
+            <SectionHead title="Closing soon" sub="Confirm dates on the source site" />
             {closing.length === 0 ? (
               <p className="mt-2 text-sm leading-6 text-zinc-400">No dated deadlines in the feed right now. Ministry and CCRAS cycles post quarterly.</p>
             ) : (
@@ -425,7 +423,7 @@ export default function Jobs() {
 
       {!resume && (
         <div className="mt-4">
-          <Empty title="Scores unlock matches" body="Match percentages and eligibility gates appear after you score a resume. The feed below is still browsable." action={<Btn to="/resume">Score your resume</Btn>} />
+          <Empty title="Scores unlock matches" body="Match percentages and eligibility gates appear after you score a resume. The feed below is still browsable." action={<Btn to="/resume">Score your resume</Btn>} icon={<CIcon icon={cilBriefcase} width={20} height={20} />} />
         </div>
       )}
 
@@ -498,7 +496,7 @@ export default function Jobs() {
       </div>
       {filtered.length === 0 && (
         <div className="mt-4">
-          <Empty title="No roles match those filters" body="Loosen a filter, or paste a posting below to add it to your feed." />
+          <Empty title="No roles match those filters" body="Loosen a filter, or paste a posting below to add it to your feed." icon={<CIcon icon={cilSearch} width={20} height={20} />} />
         </div>
       )}
 

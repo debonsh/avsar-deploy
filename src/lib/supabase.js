@@ -8,10 +8,30 @@ import { COLLEGES } from "../data/colleges.js";
 
 let cached = null;
 
+// pasted keys often carry whitespace or wrapping quotes — Vite keeps .env
+// values raw, so clean here instead of failing every network call later.
+function env(name) {
+  try {
+    const v = import.meta.env?.[name];
+    return typeof v === "string" ? v.trim().replace(/^["']|["']$/g, "") : "";
+  } catch {
+    return "";
+  }
+}
+
+// which half of the pair is missing, so the UI can name it instead of
+// waving at ".env" in general. Values never leave this module.
+export function supabaseStatus() {
+  const missing = [];
+  if (!env("VITE_SUPABASE_URL")) missing.push("VITE_SUPABASE_URL");
+  if (!env("VITE_SUPABASE_ANON_KEY")) missing.push("VITE_SUPABASE_ANON_KEY");
+  return { on: missing.length === 0, missing };
+}
+
 export function isSupabaseOn() {
   try {
     // ponytail: import.meta.env is undefined under node --test → optional chain, not a crash
-    return Boolean(import.meta.env?.VITE_SUPABASE_URL && import.meta.env?.VITE_SUPABASE_ANON_KEY);
+    return supabaseStatus().on;
   } catch {
     return false;
   }
@@ -22,7 +42,7 @@ export async function getClient() {
   try {
     if (!cached) {
       const { createClient } = await import("@supabase/supabase-js");
-      cached = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+      cached = createClient(env("VITE_SUPABASE_URL"), env("VITE_SUPABASE_ANON_KEY"));
     }
     return cached;
   } catch {

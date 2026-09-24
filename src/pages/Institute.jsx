@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import CIcon from "@coreui/icons-react";
+import { cilStar } from "@coreui/icons";
 import { Page, Card, H2, Btn, Chip, Empty } from "../components/ui.jsx";
 import { COHORT, cohortStats, enrich, toCSV } from "../lib/cohort.js";
 import { demandHeatmap } from "../lib/dashboard.js";
@@ -36,6 +38,7 @@ export default function Institute() {
     return (
       <Page
         title="Institute"
+        kicker="Desk · Institution"
         sub="Cohort readiness for placement cells. Showing sample data until your students score."
         actions={<Btn variant="quiet" onClick={() => downloadCSV(rows, "sample-cohort.csv")}>Export sample CSV</Btn>}
       >
@@ -100,6 +103,7 @@ export default function Institute() {
   return (
     <Page
       title="Institute"
+      kicker="Desk · Institution"
       sub={`${summary.total} scored assessments on this device and workspace.`}
       actions={<Btn variant="quiet" onClick={() => downloadCSV(real.map((a, i) => ({ name: `student-${i + 1}`, role: a.role_key, ats: a.ats, quiz: 0, quests: 0, main: a.ats, rank: "", applied: false })), "assessments.csv")}>Export CSV</Btn>}
     >
@@ -127,7 +131,7 @@ export default function Institute() {
         )}
         {summary.comments.length === 0 && (
           <div className="mt-4">
-            <Empty title="No feedback yet" body="Students can leave a star rating on their Portfolio page. It appears here." />
+            <Empty title="No feedback yet" body="Students can leave a star rating on their Portfolio page. It appears here." icon={<CIcon icon={cilStar} width={20} height={20} />} />
           </div>
         )}
       </Card>

@@ -2,6 +2,8 @@
 // workshops, mentorships, innovation challenges. Enrollments persist locally;
 // "closes your gaps" ranks programs against your live gap vector.
 import { useMemo, useState } from "react";
+import CIcon from "@coreui/icons-react";
+import { cilSchool } from "@coreui/icons";
 import { Page, Card, H2, Btn, Chip, Empty } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { PROGRAMS, PROGRAM_KINDS } from "../data/programs.js";
@@ -54,6 +56,7 @@ export default function Programs() {
   return (
     <Page
       title="Programs"
+      kicker="Learn · Closes gaps"
       sub={isTech
         ? "Tech learning programs, workshops, mentorships, and hackathons — each tagged with the skill gap it closes. Providers are hand-verified; links never AI-invented."
         : "Industry learning programs, workshops, mentorships, and innovation challenges — each tagged with the skill gap it closes. Providers are hand-verified; links never AI-invented."}
@@ -96,7 +99,7 @@ export default function Programs() {
         ))}
       </div>
 
-      {list.length === 0 && <Empty title="Nothing here yet" body="No programs of this kind are listed right now." />}
+      {list.length === 0 && <Empty title="Nothing here yet" body="No programs of this kind are listed right now." icon={<CIcon icon={cilSchool} width={20} height={20} />} />}
       <div className="space-y-3">
         {list.map((p) => (
           <Card key={p.id}>

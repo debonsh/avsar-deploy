@@ -30,8 +30,8 @@ describe("rbac: who may open which route", () => {
     assert.equal(canAccess("ayush", "/industry"), false);
   });
 
-  it("share, verify, and the chooser stay public", () => {
-    for (const p of ["/", "/u/:id", "/verify/:code"]) {
+  it("share, verify, login, and the chooser stay public", () => {
+    for (const p of ["/", "/u/:id", "/verify/:code", "/login"]) {
       for (const r of ["student", "ayush", "industry", "faculty", "institute"]) {
         assert.equal(canAccess(r, p), true, `${r} → ${p}`);
       }
@@ -46,8 +46,8 @@ describe("rbac: who may open which route", () => {
 });
 
 describe("rbac: which routes survive without onboarding", () => {
-  it("the chooser, share links, and verify links render before a portal is picked", () => {
-    for (const p of ["/", "/u/avsar-abc123", "/verify/deadbeef"]) assert.equal(isPublicPath(p), true, p);
+  it("the chooser, share links, verify links, and login render before a portal is picked", () => {
+    for (const p of ["/", "/u/avsar-abc123", "/verify/deadbeef", "/login"]) assert.equal(isPublicPath(p), true, p);
   });
 
   it("every portal route needs a portal", () => {

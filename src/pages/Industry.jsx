@@ -86,6 +86,7 @@ export default function Industry() {
   return (
     <Page
       title={isAyush ? "For Hospitals & Industry" : "Post a role"}
+      kicker="Desk · Industry"
       sub={
         isAyush
           ? "Post internships, rotatory slots, and entry-level vaidya roles with required skills. Students whose scores clear your bar see them as eligible."
@@ -139,8 +140,8 @@ export default function Industry() {
         <H2>Posted by you</H2>
         {customJobs.length === 0 ? (
           <Empty
-            title="nothing posted yet"
-            body="post your first role above. it lands in the student feed with eligibility computed live."
+            title="Nothing posted yet"
+            body="Post your first role above. It lands in the student feed with eligibility computed live."
             action={<Link to="/jobs" className="font-mono text-xs text-blurple-soft underline underline-offset-4">browse the feed →</Link>}
           />
         ) : (

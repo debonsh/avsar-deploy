@@ -5,6 +5,8 @@
 // still stands — never a fake page.
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
+import CIcon from "@coreui/icons-react";
+import { cilBadge } from "@coreui/icons";
 import { Page, Card, H2, Btn, Chip, Empty } from "../components/ui.jsx";
 import { useAvsar } from "../app/store.jsx";
 import { getOrCreateDeviceId, loadNickname, loadGithub } from "../lib/identity.js";
@@ -102,7 +104,7 @@ export default function Public() {
     if (guest) {
       const roleLabel = ROLES[guest.roleKey]?.label || guest.roleKey;
       return (
-        <Page title={`Student ${guest.id.slice(0, 8)}`} sub={`Public passport · ${roleLabel} · readiness ${guest.main || guest.score}/100`}>
+        <Page title={`Student ${guest.id.slice(0, 8)}`} kicker="Passport · Public" sub={`Public passport · ${roleLabel} · readiness ${guest.main || guest.score}/100`}>
           <Card>
             <H2>Proven skills</H2>
             <div className="flex flex-wrap gap-1.5">
@@ -123,18 +125,19 @@ export default function Public() {
       );
     }
     return (
-      <Page title="Passport not on this device" sub="Public profiles need the network; offline, only the owner's device can render one.">
+      <Page title="Passport not on this device" kicker="Passport · Public" sub="Public profiles need the network; offline, only the owner's device can render one.">
         <Empty
           title={guestChecked ? "Ask for their verify link" : "Looking for this passport…"}
           body="Every student carries a QR-signed credential that recomputes offline. That link — not this page — is the proof."
           action={<Btn to="/">Get your own passport</Btn>}
+          icon={<CIcon icon={cilBadge} width={20} height={20} />}
         />
       </Page>
     );
   }
 
   return (
-    <Page title={`${loadNickname() || "Avsar student"}`} sub={`Public passport · ${mine.slice(0, 8)} · readiness ${readiness}/100`}>
+    <Page title={`${loadNickname() || "Avsar student"}`} kicker="Passport · Public" sub={`Public passport · ${mine.slice(0, 8)} · readiness ${readiness}/100`}>
       <Card>
         <H2>Verified skills ({verified.length}/{found.length})</H2>
         <div className="flex flex-wrap gap-1.5">

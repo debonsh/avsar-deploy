@@ -51,7 +51,7 @@ export default function Welcome() {
   return (
     <Page title="" sub="">
       {/* hero: dual-universe gradient, dot grid, mono status strip */}
-      <section className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-8 sm:px-8 sm:py-10">
+      <section className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-10 sm:px-10 sm:py-14">
         <div className="bg-dither mask-hero-fade pointer-events-none absolute inset-0" aria-hidden />
         <div className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-emerald-500/20 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-24 -right-24 size-72 rounded-full bg-blurple/25 blur-3xl" aria-hidden />
@@ -68,24 +68,25 @@ export default function Welcome() {
             apply to match-scored internships with proof, not promises. Vaidya
             (AYUSH) or Tech: pick a side, one tap sets it all.
           </p>
-          {/* the loop: assess → upskill → intern */}
-          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+          {/* the loop: assess → upskill → intern, numbered rail */}
+          <ol className="mt-6 grid gap-2 sm:grid-cols-3">
             {[
-              { icon: Target, title: "Assess", body: (<>Resume score + quiz <ArrowRight className="inline size-3 align-middle" aria-hidden /> skill passport</>) },
-              { icon: Flame, title: "Upskill", body: "Quests, streaks, XP close the gaps" },
-              { icon: Briefcase, title: "Intern", body: "Match-scored roles, apply + track" },
+              { n: "01", icon: Target, title: "Assess", body: "Resume score + quiz becomes a skill passport" },
+              { n: "02", icon: Flame, title: "Upskill", body: "Quests, streaks, and XP close each gap" },
+              { n: "03", icon: Briefcase, title: "Intern", body: "Match-scored roles, apply and track" },
             ].map((s) => (
-              <div key={s.title} className="flex items-center gap-2.5 px-1 py-1.5">
-                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-300" aria-hidden>
-                  <s.icon className="size-4" />
-                </span>
-                <span>
-                  <span className="block text-xs font-bold text-zinc-100">{s.title}</span>
-                  <span className="block text-[11px] leading-4 text-zinc-500">{s.body}</span>
-                </span>
-              </div>
+              <li key={s.title} className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3.5 py-3">
+                <p className="font-mono text-[10px] tracking-widest text-zinc-600">{s.n}</p>
+                <p className="mt-2 flex items-center gap-2.5">
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-300" aria-hidden>
+                    <s.icon className="size-4" />
+                  </span>
+                  <span className="text-xs font-bold text-zinc-100">{s.title}</span>
+                </p>
+                <p className="mt-1.5 text-[11px] leading-4 text-zinc-500">{s.body}</p>
+              </li>
             ))}
-          </div>
+          </ol>
           <div className="mt-4 flex items-center gap-3 font-mono text-[11px] uppercase tracking-widest" aria-hidden>
             <span className="flex items-center gap-1.5 text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-400" /> Vaidya
@@ -97,6 +98,21 @@ export default function Welcome() {
           </div>
         </div>
       </section>
+
+      {/* proof, not promises: checkable engine facts, no invented metrics */}
+      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["75", "skills mapped"],
+          ["08", "domains"],
+          ["05", "score dimensions"],
+          ["04", "steps in the loop"],
+        ].map(([v, l]) => (
+          <div key={l} className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3.5">
+            <dd className="font-display text-2xl font-bold tabular-nums text-zinc-50">{v}</dd>
+            <dt className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500">{l}</dt>
+          </div>
+        ))}
+      </dl>
 
       {track && (
         <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
@@ -118,7 +134,7 @@ export default function Welcome() {
         {ROUTER_QS[0].q}
       </h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {ROUTER_QS[0].opts.map((o) => {
+        {ROUTER_QS[0].opts.map((o, i) => {
           const st = OPT_STYLE[o.id] || OPT_STYLE.other;
           const Icon = OPT_ICON[o.id] || Compass;
           const active = who === o.id;
@@ -128,13 +144,16 @@ export default function Welcome() {
               type="button"
               onClick={() => (o.track ? go(o.track) : setWho(o.track ? null : o.id))}
               aria-pressed={active}
-              className={`group relative flex min-h-[148px] flex-col overflow-hidden rounded-xl border bg-zinc-950 p-4 text-left transition-all active:scale-[0.99] ${
+              className={`group relative flex min-h-[168px] flex-col overflow-hidden rounded-xl border bg-zinc-950 p-4 text-left transition-all active:scale-[0.99] ${
                 active ? "border-blurple bg-blurple/10" : `border-zinc-800 ${st.ring}`
               }`}
             >
               <span className={`pointer-events-none absolute inset-0 transition-colors ${st.glow}`} aria-hidden />
-              <span className={`relative inline-flex size-9 items-center justify-center rounded-xl ${st.badge}`} aria-hidden>
-                <Icon className="size-[18px]" />
+              <span className="relative flex items-center justify-between" aria-hidden>
+                <span className={`inline-flex size-9 items-center justify-center rounded-xl ${st.badge}`}>
+                  <Icon className="size-[18px]" />
+                </span>
+                <span className="font-mono text-[10px] tracking-widest text-zinc-600">0{i + 1}</span>
               </span>
               <span className="relative mt-3 block text-sm font-bold text-zinc-100">{o.label}</span>
               {o.hint && <span className="relative mt-1 block text-xs leading-5 text-zinc-500">{o.hint}</span>}
